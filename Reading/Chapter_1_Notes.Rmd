@@ -15,4 +15,77 @@ knitr::opts_chunk$set(echo = TRUE)
   + data manipulation
   + static and interactive mapping
   + spatial modelling
-  + **Geocomputation:** "working with geographic data in a computational way, focusing on code, reproducibility and modularity."
+
+## What is geocomputation?
+* **Geocomputation:** "working with geographic data in a computational way, focusing on code, reproducibility and modularity."
+  + Authors trace it to 1996 conference
+  + Differentiated from 'quantitative geography' by focus on experimentation and innovation
+  + early advocates identified as Longley, Openshaw, Abrahart
+  + Robin et al. emphasize "reproducibility an collaboration" in their vision of Geocomputation
+
+## Why use R for Geocomputation?
+* "advanced analysis, modelling, and visualization capabilities"
+* User friendly due to RStudio
+* a lot of "bridges" to other tools/languages
+* rapidly evolving - authors demonstrate with following code chunk, which wouldn't have been as easy to implement in 2013
+
+```{r}
+library(leaflet)
+popup = c("Robin", "Jakub", "Jannes")
+leaflet() %>%
+  addProviderTiles("NASAGIBS.ViirsEarthAtNight2012") %>%
+  addMarkers(lng = c(-3, 23, 11),
+             lat = c(52, 53, 49), 
+             popup = popup)
+```
+
+## Software for geocomputation
+* Interpreted languages
+  + Python
+      - QGIS, GRASS, SAGA have Python APIs
+      - popular in data science
+      - general purpose language
+      - large community across domains
+  + R
+      - better support of vector and raster in language
+      - strong visualization tools
+      - focused on statistical/data applications
+* Compiled languages
+  + C++
+      - basis of QGIS, GRASS, SAGA
+  + Java
+      - basis for GeoTools, JTS, Geoserver/Geonode
+      - platform independent
+
+## R's spatial ecosystem
+* rapidly evolving
+  + **sf** builds off of **sp**
+* influence of **dplyr** and **tidyverse**
+  + **sf** creates rough approach to 'tidy geographic data'
+
+* rspatial and r-spatial are two related but separate communities
+  + **rspatial** is responsible for **terra**
+  + **r-spatial** is responsible for **sf**
+
+* earlier packages
+  + **akima** and **geoR** - smoothing and interpolation
+  + **splancs** and **spatstat** - point pattern analysis
+  + **spdep** - spatial autocorrelation
+  + **maptools** - allowed reading of shapefiles into R; precursor to **sp**
+  + **sp** - allowed for distinctly spatial classes and methods instead of treating spatial data the same as non-spatial data
+  + **rgdal** - allowed the import of a variety of raster (and through PROJ, vector) spatial data
+  + **rgeos** - interfaces with GEOS, allowing geometric operations, mainly on **sp** data
+  + **raster** - allowed raster support not available in **sp**, data too large for RAM, and implemented map algebra
+* More recent developments
+  + Various bridge packages (**GRASS, spgrass6, and rgrass7** to GRASS; **RSAGA** to SAGA; **rqgisprocess** to QGIS)
+  + expansion of visualization
+      - **RGoogleMaps** allowed pulling in online basemaps
+      - **ggmap** allowed for inefficient mapping via **ggplot2**
+      - **raster** was expanded on by **rasterVis**
+  + 2018 development of **tmap**, **leaflet**, and **mapview** as visualization packages that support **sf** data
+  + 2020 - **terra** is developed as a successor to **raster** 
+  + 2021 - **sf** incorporates spherical geometry
+      - operations on geographic CRS use *s2geometry* from C++
+      - operations on projected CRS still use *GEOS*
+  + 2021 - **stars** developed to handle data cubes
+  
