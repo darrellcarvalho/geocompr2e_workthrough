@@ -50,6 +50,7 @@ leaflet() %>%
       - better support of vector and raster in language
       - strong visualization tools
       - focused on statistical/data applications
+
 * Compiled languages
   + C++
       - basis of QGIS, GRASS, SAGA
@@ -60,6 +61,7 @@ leaflet() %>%
 ## R's spatial ecosystem
 * rapidly evolving
   + **sf** builds off of **sp**
+
 * influence of **dplyr** and **tidyverse**
   + **sf** creates rough approach to 'tidy geographic data'
 
@@ -76,16 +78,25 @@ leaflet() %>%
   + **rgdal** - allowed the import of a variety of raster (and through PROJ, vector) spatial data
   + **rgeos** - interfaces with GEOS, allowing geometric operations, mainly on **sp** data
   + **raster** - allowed raster support not available in **sp**, data too large for RAM, and implemented map algebra
+
 * More recent developments
-  + Various bridge packages (**GRASS, spgrass6, and rgrass7** to GRASS; **RSAGA** to SAGA; **rqgisprocess** to QGIS)
+  + Various bridge packages (**GRASS, spgrass6, and rgrass7** to GRASS;
+  **RSAGA** to SAGA; **rqgisprocess** to QGIS)
   + expansion of visualization
       - **RGoogleMaps** allowed pulling in online basemaps
       - **ggmap** allowed for inefficient mapping via **ggplot2**
       - **raster** was expanded on by **rasterVis**
-  + 2018 development of **tmap**, **leaflet**, and **mapview** as visualization packages that support **sf** data
+  + 2018 - development of **tmap**, **leaflet**, and **mapview** as 
+  visualization packages that support **sf** data
+  + 2018 - switch from **proj4string** to **WKT** due to changes in PROJ
+  + 2018 - **rayshader** package gives raytracing and hill-shading tools
+  + 2018 - **ggspatial** adds visualization elements to **ggplot2**
+  + 2019 - **gganimate** opens the door for smooth animation within **ggplot2**
   + 2020 - **terra** is developed as a successor to **raster** 
   + 2021 - **sf** incorporates spherical geometry
       - operations on geographic CRS use *s2geometry* from C++
       - operations on projected CRS still use *GEOS*
   + 2021 - **stars** developed to handle data cubes
+  + 2021 - **lidR** processes LiDAR data
+  + 2021 - the announced retirement of **rgdal**, **rgeos**, and **maptools**
   
