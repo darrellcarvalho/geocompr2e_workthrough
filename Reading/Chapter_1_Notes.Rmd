@@ -1,7 +1,6 @@
 ---
 title: "Chapter 1 Notes"
 author: "Darrell A. Carvalho"
-date: "1/7/2022"
 output: html_document
 ---
 
