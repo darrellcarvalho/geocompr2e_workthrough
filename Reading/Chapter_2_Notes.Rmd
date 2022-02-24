@@ -4,6 +4,72 @@ author: "Darrell A. Carvalho"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+## Setup
+
+The code in the following chunk installs all the packages necessary for 
+reproducing the book.
+
+```{r setup, eval = FALSE, include = TRUE}
+install.packages("remotes")
+remotes::install_github("geocompr/geocompkg")
 ```
+
+***
+
+The authors demontrate loading libraries using the `library()` function, 
+but I prefer using pacman's `p_load()`
+
+```{r libraries, eval=FALSE, include=TRUE}
+pacman::p_load(sf, terra, spData, spDataLarge)
+```
+
+***
+
+## Introduction
+
+#### **The fundamental geographic data models:**
+
+* Vector
+  + Represents the world as points, lines, and polygons
+  + heavily used in social sciences
+  + discrete placement of vector entries leads to high precision
+      - accuracy not guaranteed
+* Raster
+  + aggregates features into equally-sized cells
+      - consistent over space
+      - scaleable
+* the book uses sf for vector and terra for raster
+* raster and vector may, if needed, be converted
+
+***
+
+## Vector Data
+
+* based on points defined by coordinates in a Coordinate Reference System
+* Most often 2D (long, lat), possible 3D (long, lat, height; long, lat, time)
+corresponding to x,y,z coordinate definitions
+  + London may be plotted at `c(-0.1, 51.5)` in a geographic (lon/lat) CRS
+  + It may also be plotted at `c(530000, 180000)` in British National Grid - a
+  projected coordinate system where each unit is 1 meter
+  
+* **sf** gives both classes for vector data, and a command-line for various
+libraries:
+  + GDAL (geographic I/O)
+  + PROJ (coordinate system manipulation)
+  + GEOS (geometry on projected data)
+  + S2 (spherical geometry)
+      - switching off S2 can be done using `sf::sf_use_s2("FALSE")`
+
+#### **An introduction to simple features**
+* simple features is open standard developed by Open Geospatial Consortium
+  + hierarchical data model
+  + supports 18 geometry types
+  + 7 core types, supported by **sf**:
+      - LINESTRING
+      - MULTILINESTRING
+      - POINT
+      - MULTIPOINT
+      - POLYGON
+      - MULTIPOLYGON
+      - GEOMETRYCOLLECTION
+ 
