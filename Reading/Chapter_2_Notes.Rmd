@@ -2,14 +2,18 @@
 title: "Chapter 2 Notes"
 author: "Darrell A. Carvalho"
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+  chunk_output_type: console
 ---
 
 ## Setup
 
-The code in the following chunk installs all the packages necessary for 
+The code in the following chunk installs all the packages necessary for
 reproducing the book.
 
-The authors demontrate loading libraries using the `library()` function, 
+The authors demontrate loading libraries using the `library()` function,
 but I prefer using pacman's `p_load()`
 
 ```{r setup, eval = TRUE, include = TRUE}
@@ -17,97 +21,129 @@ but I prefer using pacman's `p_load()`
 # remotes::install_github("geocompr/geocompkg")
 pacman::p_load(sf, terra, spData, spDataLarge)
 ```
-***
+
+------------------------------------------------------------------------
 
 ## Introduction
 
 #### **The fundamental geographic data models:**
 
-* Vector
-  + Represents the world as points, lines, and polygons
-  + heavily used in social sciences
-  + discrete placement of vector entries leads to high precision
-      - accuracy not guaranteed
-* Raster
-  + aggregates features into equally-sized cells
-      - consistent over space
-      - scaleable
-* the book uses sf for vector and terra for raster
-* raster and vector may, if needed, be converted
+-   Vector
 
-***
+    -   Represents the world as points, lines, and polygons
+
+    -   heavily used in social sciences
+
+    -   discrete placement of vector entries leads to high precision
+
+        -   accuracy not guaranteed
+
+-   Raster
+
+    -   aggregates features into equally-sized cells
+
+        -   consistent over space
+        -   scaleable
+
+-   the book uses sf for vector and terra for raster
+
+-   raster and vector may, if needed, be converted
+
+------------------------------------------------------------------------
 
 ## Vector Data
 
-* based on points defined by coordinates in a Coordinate Reference System
-* Most often 2D (long, lat), possible 3D (long, lat, height; long, lat, time)
-corresponding to x,y,z coordinate definitions
-  + London may be plotted at `c(-0.1, 51.5)` in a geographic (lon/lat) CRS
-  + It may also be plotted at `c(530000, 180000)` in British National Grid - a
-  projected coordinate system where each unit is 1 meter
-  
-* **sf** gives both classes for vector data, and a command-line for various
-libraries:
-  + GDAL (geographic I/O)
-  + PROJ (coordinate system manipulation)
-  + GEOS (geometry on projected data)
-  + S2 (spherical geometry)
-      - switching off S2 can be done using `sf::sf_use_s2("FALSE")`
+-   based on points defined by coordinates in a Coordinate Reference
+    System
+
+-   Most often 2D (long, lat), possible 3D (long, lat, height; long,
+    lat, time) corresponding to x,y,z coordinate definitions
+
+    -   London may be plotted at `c(-0.1, 51.5)` in a geographic
+        (lon/lat) CRS
+    -   It may also be plotted at `c(530000, 180000)` in British
+        National Grid - a projected coordinate system where each unit is
+        1 meter
+
+-   **sf** gives both classes for vector data, and a command-line for
+    various libraries:
+
+    -   GDAL (geographic I/O)
+
+    -   PROJ (coordinate system manipulation)
+
+    -   GEOS (geometry on projected data)
+
+    -   S2 (spherical geometry)
+
+        -   switching off S2 can be done using `sf::sf_use_s2("FALSE")`
 
 #### **An introduction to simple features**
+
 simple features is open standard developed by Open Geospatial Consortium
 
-* hierarchical data model
-* supports 18 geometry types
-* 7 core types, supported by **sf** (see **Geometry types**)
- 
-**sf** supports *s2* which allows for computation on "non-planar" 
-(that is, spherical) data
+-   hierarchical data model
+-   supports 18 geometry types
+-   7 core types, supported by **sf** (see **Geometry types**)
 
-This chunk demonstrates a class check on the `world` data loaded from  **spData**:
+**sf** supports *s2* which allows for computation on "non-planar" (that
+is, spherical) data
+
+This chunk demonstrates a class check on the `world` data loaded from
+**spData**:
+
 ```{r}
 class(world)
 ```
 
-This chunk demonstrates a names check on the columns of the `world` data:
+This chunk demonstrates a names check on the columns of the `world`
+data:
+
 ```{r}
 names(world)
 ```
 
 This chunk demonstrates simple plotting functionality:
+
 ```{r warning=FALSE}
 plot(world)
 ```
 
-The base plot plots each column/variable as its own facet. This all operates under the treatment of `sf` objects as dataframes with geographic data stored in spatial columns (in this case, world$geom)
+The base plot plots each column/variable as its own facet. This all
+operates under the treatment of `sf` objects as dataframes with
+geographic data stored in spatial columns (in this case, world\$geom)
 
-This chunk shows that `summary()` and similar function calls retain geometry columns - what the authors refer to as 'sticky behavior' - geometry carries along with the data unless deliberately removed.
+This chunk shows that `summary()` and similar function calls retain
+geometry columns - what the authors refer to as 'sticky behavior' -
+geometry carries along with the data unless deliberately removed.
+
 ```{r}
 summary(world["lifeExp"])
 ```
 
 This chunk demonstrates the ease of subsetting sf data:
+
 ```{r}
 world_mini <- world[1:2, 1:3]
 world_mini
 ```
-Note the inclusion of spatial metadata and the retention of the `geom` column
 
-`sf` objects are data frames with of `geom` or `geometry` list columns (class sfc)
+Note the inclusion of spatial metadata and the retention of the `geom`
+column
 
-* `sfc` objects are composed of one or more `sfg` objects
-* `sfg` objects are composed of coordinates
+`sf` objects are data frames with of `geom` or `geometry` list columns
+(class sfc)
+
+-   `sfc` objects are composed of one or more `sfg` objects
+-   `sfg` objects are composed of coordinates
 
 #### **Why simple features?**
 
-Author-listed reasons for sf:
-* Fast read/write
-* Enhanced plotting
-* treated as dataframes in most cases
-* consistent naming of sf functions using `st_` prefix
-* compatibility with %>% pipe
-* tidyverse compatibility
-* ease to convert between sf and sp if needed:
+Author-listed reasons for sf: \* Fast read/write \* Enhanced plotting \*
+treated as dataframes in most cases \* consistent naming of sf functions
+using `st_` prefix \* compatibility with %>% pipe \* tidyverse
+compatibility \* ease to convert between sf and sp if needed:
+
 ```{r}
 library(sp)
 world_sp <- as(world, "Spatial") # sf to sp
@@ -115,25 +151,28 @@ world_sp <- as(world, "Spatial") # sf to sp
 world_sf <- st_as_sf(world_sp) # sp to sf
 ```
 
-
 #### **Basic map making**
-* basic maps are created with `plot()`
-  + this defaults to multi-facet plots with one facet for each variable
+
+-   basic maps are created with `plot()`
+
+    -   this defaults to multi-facet plots with one facet for each
+        variable
 
 ```{r}
 plot(world[3:6])
 ```
-  
-  + single-variable plotting is easy, however
+
+-   single-variable plotting is easy, however
 
 ```{r}
 plot(world["pop"])
 ```
 
-  + colors set with `col = ` argument
-  + `add = true` argument layers plot over existing plot(s)
+-   colors set with `col =` argument
+-   `add = true` argument layers plot over existing plot(s)
 
 To demonstrate the above, we plot the asian continent over the world map
+
 ```{r}
 world_asia <- world[world$continent == "Asia", ] #subsets asia continent
 asia <- st_union(world_asia) # union of all asian polygons into one multipolygon
@@ -142,10 +181,12 @@ plot(world["pop"], reset = FALSE) # plot world population, prevent reset of plot
 plot(asia, add = TRUE, col = "red") # plot asian continent over world in red color
 ```
 
+The authors demonstrate code on modifying aesthetics using `cex`
+argument (standing for "c"haracter "ex"pansion, I believe)
 
-The authors demonstrate code on modifying aesthetics using `cex` argument (standing for "c"haracter "ex"pansion, I believe)
+**Note:** this code does not center the population circles - this is
+saved for chapter end exercises.
 
-**Note:** this code does not center the population circles - this is saved for chapter end exercises.
 ```{r}
 plot(world["continent"], reset = FALSE)
 cex = sqrt(world$pop) / 10000
@@ -153,24 +194,75 @@ world_cents = st_centroid(world, of_largest = TRUE)
 plot(st_geometry(world_cents), add = TRUE, cex = cex)
 ```
 
-
 #### **Geometry types**
-* POINT
-  + dimensionless geometry, representing coordinates on a surface
-* LINESTRING
-  + geometry with one dimension - length
-  + composed of segments connecting two or more POINTs
-* POLYGON
-  + geometry with two dimensions - length and width
-  + composed of LINESTRING segments that close
-      - that is, the end POINT is coincident with the start POINT
-* MULTIPOINT
-  + a simple feature that carries multiple non-connected POINTs
-* MULTILINESTRING
-  + a simple feature that carries multiple non-connected LINESTRINGs
-* MULTIPOLYGON
-  + a simple feature that carries multiple non-connected POLYGONs
-* GEOMETRY COLLECTION
-  + a simple feature that carries multiple geometries that are non-connected with each other
+
+-   POINT
+
+    -   dimensionless geometry, representing coordinates on a surface
+
+-   LINESTRING
+
+    -   geometry with one dimension - length
+    -   composed of segments connecting two or more POINTs
+
+-   POLYGON
+
+    -   geometry with two dimensions - length and width
+
+    -   composed of LINESTRING segments that close
+
+        -   that is, the end POINT is coincident with the start POINT
+
+-   MULTIPOINT
+
+    -   a simple feature that carries multiple non-connected POINTs
+
+-   MULTILINESTRING
+
+    -   a simple feature that carries multiple non-connected LINESTRINGs
+
+-   MULTIPOLYGON
+
+    -   a simple feature that carries multiple non-connected POLYGONs
+
+-   GEOMETRY COLLECTION
+
+    -   a simple feature that carries multiple geometries that are
+        non-connected with each other
 
 #### **The sf class**
+
+This section describes the structure of sf objects, but the long and
+short of it is that sf objects are data frames with spatial information
+stored in a geometry column.
+
+#### **Simple feature geometries (sfg)**
+
+-   This class represents the geometry types listed above.
+
+-   functions exist to create sfg objects: they follow the format of
+    `st_geometrytype(c(coordinate, coordinate))`
+
+    -   `st_point()`
+    -   `st_linestring()`
+    -   `st_polygon()`
+    -   `st_multipoint()`
+    -   `st_multilinestring()`
+    -   `st_multipolygon()`
+    -   `st_geometrycollection()`
+
+-   the authors demonstrate the creation of different `sfg` objects
+    using vectors, lists, and matrices
+
+#### **Simple feature columns (sfc)**
+
+-   `sfc` objects are a list of `sfg` objects, + CRS info
+-   combine geometries with `st_sfc()`
+-   set crs with the `crs` argument for `st_sfc()` or `st_sf()`
+-   `st_crs()` reports crs of sf object
+
+#### **The sfheaders package**
+
+This section addresses `sfheaders`, which is a faster library for
+creating and manipulating sf objects. I will reread this section at a
+later date.
