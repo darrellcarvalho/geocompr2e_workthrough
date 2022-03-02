@@ -171,7 +171,7 @@ plot(world["pop"])
 -   colors set with `col =` argument
 -   `add = true` argument layers plot over existing plot(s)
 
-To demonstrate the above, we plot the asian continent over the world map
+To demonstrate the above, we plot the Asian continent over the world map
 
 ```{r}
 world_asia <- world[world$continent == "Asia", ] #subsets asia continent
@@ -263,6 +263,218 @@ stored in a geometry column.
 
 #### **The sfheaders package**
 
-This section addresses `sfheaders`, which is a faster library for
-creating and manipulating sf objects. I will reread this section at a
-later date.
+This section addresses **sfheaders**, which is a faster library for
+creating and manipulating sf objects. I will reread this section as
+needed.
+
+#### Spherical geometry operations with S2
+
+-   `sf_use_s2()` returns the s2 engine state, and when passed `TRUE` or
+    `FALSE` can change whether the engine is used or not.
+
+    ```{r echo=TRUE}
+
+    india <- world[world$name_long == "India", ]
+    sf_use_s2() # is SF using s2?
+
+    india_buffer_with_s2 <-  st_buffer(india, 1)
+    plot(india_buffer_with_s2[1])
+    sf_use_s2(FALSE) # turn off s2
+    india_buffer_without_s2 <- st_buffer(india, 1)
+    plot(india_buffer_without_s2[1])
+    sf_use_s2(TRUE)
+    ```
+
+-   There are conditions where switching s2 off is optimal; to do this
+    project-wide, the authors recommend adding `sf::sf_use_s2(FALSE)` to
+    the .RProfile for the project.
+
+## Raster data
+
+-   spatial raster - continuous grid of cells(pixels)
+
+    -   most grids are "regular" - each cell has same dimensions
+
+-   data model consists of header and matrix
+
+    -    Header defines CRS, extent, origin
+
+        -   Extent is dimensionality - number of rows and columns
+
+        -   origin is "starting point"/ first cell - upper left by
+            default in **terra**
+
+-   raster data can be processed more efficiently and faster than vector
+    data
+
+-   raster cells hold a single value.
+
+    -   This value may be numeric or categorical
+
+-   raster useful for continuous phenomena
+
+-   Discrete phenomena can be represented in raster models, but may be
+    better represented in vector.
+
+#### R packages for working with raster
+
+-   three key raster packages
+
+    -   **raster** (undergoing mothballing)
+
+    -   **terra**
+
+        -   focuses on regular grid
+
+        -   traditional single or multi-band imagery
+
+        -   built on C++ code, uses C++ pointers
+
+        -   has own `SpatVector`object for vectors
+
+        -   relies on built-in functions
+
+    -   **stars**
+
+        -   focuses on more exotic grids
+
+        -   useful for raster data cubes
+
+        -   stores in arrays or just a filepath to raster data
+
+        -   more integrated with sf functions and objects
+
+        -   has own methods built on existing functions
+
+-   converting between `stars` and `terra` objects is easy
+
+    -   **terra** -> **stars**, use `st_as_stars()`
+
+    -   **stars** -> **terra**, use `rast()`
+
+#### An introduction to terra
+
+Beginning work with the Zion National Park Data:
+
+```{r}
+raster_filepath <- system.file("raster/srtm.tif", package = "spDataLarge") # store path to data
+my_rast <- rast(raster_filepath) # bring data at filepath into r environment
+class(my_rast) # ensure data is SpatRaster from terra
+
+print(my_rast) # return raster header
+
+dim(my_rast) # return rows, columns, and layers
+
+ncell(my_rast) # return cell count
+
+res(my_rast) # return spatial resolution
+
+ext(my_rast) # return spatial extent
+
+crs(my_rast) # return coordinate reference system
+
+inMemory(my_rast) # boolean return of whether data is in memory or on disk
+```
+
+-   `help("terra-package")` for **terra** functions
+
+#### Basic map making
+
+-   **terra** includes `plot()` methods for SpatRaster objects
+
+    ```{r}
+    plot(my_rast)
+    ```
+
+-   `terra::plotRGB()` creates Red-Green-Blue plot from raster layers
+
+-   **tmap** allows raster/vector static/interactive maps
+
+-   **rasterVis** extends options
+
+#### Raster classes
+
+-   `SpatRaster` - **terra** raster objects
+
+    ```{r}
+
+    # Step 1: point to location
+    single_raster_file <- system.file("raster/srtm.tif", package = "spDataLarge")
+    # step 2: create object with rast()
+    single_rast <- rast(raster_filepath)
+    ```
+
+-   **terra** uses GDAL drivers.
+
+-   raster header and pointers read into RAM; not usually whole raster
+
+-   `rast()` allows for creating rasters from scratch.
+
+    ```{r}
+    new_raster <- rast(nrows = 6, ncols = 6, resolution = 0.5,
+                       xmin = -1.5, xmax = 1.5, ymin = -1.5, 
+                       ymax = 1.5, vals = 1:36)
+    ```
+
+-   `SpatRaster` class allows multiple layers
+
+    -   multispectral/multiband imagery
+
+    -   raster time-series
+
+```{r}
+multi_raster_file <- system.file("raster/landsat.tif", package = "spDataLarge")
+multi_rast <- rast(multi_raster_file)
+print(multi_rast)
+nlyr(multi_rast) # returns number of layers 
+```
+
+-   Multi-layered objects can be subset using `terra::subset()`
+
+```{r}
+multi_rast3 <- subset(multi_rast, 3)
+multi_rast4 <- subset(multi_rast, "landsat_4")
+```
+
+-   `c()` combines single layers into a multilayer object
+
+```{r}
+multi_rast34 <- c(multi_rast3, multi_rast4)
+```
+
+## Geographic and projected Coordinate Reference Systems
+
+#### Geographic coordinate systems
+
+-   Geographic coordinates identify location using lat/long (angular
+    distances)
+
+-   The surface is modeled either as a sphere or an ellipsoid ("oblate
+    spheroid", in my geography courses)
+
+    -   Trade-offs:
+
+    -   sphere is simpler
+
+    -   ellipsoid is more accurate; requires two key parameters
+
+        -   equatorial radius
+
+    -   polar radius
+
+-   Two parts of datums
+
+    -   determine which ellipsoid to use
+
+    -    how to describe locations on this ellipsoid using Cartesian
+        Coordinates.
+
+-   datums are geocentric (`WGS84`) or local (`NAD83`)
+
+    -   geocentric are pegged to Earth's center
+
+    -   local are pegged to a surface at a particular location, but may
+        result in inaccuracies at locations further away from the chosen
+        locale of focus.
+
+#### Projected coordinate reference systems
