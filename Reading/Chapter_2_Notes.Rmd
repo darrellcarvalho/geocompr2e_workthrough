@@ -1,22 +1,23 @@
 ---
 title: "Chapter 2 Notes"
 author: "Darrell A. Carvalho"
-output: html_document
-editor_options: 
-  markdown: 
-    wrap: 72
-  chunk_output_type: console
+output: 
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    theme: spacelab
+    number_sections: yes
 ---
 
-## Setup
+# Setup
 
-The code in the following chunk installs all the packages necessary for
-reproducing the book.
+The code in the following chunk installs all the packages necessary for reproducing the book.
 
-The authors demontrate loading libraries using the `library()` function,
-but I prefer using pacman's `p_load()`
+The authors demontrate loading libraries using the `library()` function, but I prefer using pacman's `p_load()`
 
 ```{r setup, eval = TRUE, include = TRUE}
+knitr::opts_chunk$set(message = TRUE, warning = TRUE)
 # install.packages("remotes")
 # remotes::install_github("geocompr/geocompkg")
 pacman::p_load(sf, terra, spData, spDataLarge)
@@ -24,9 +25,9 @@ pacman::p_load(sf, terra, spData, spDataLarge)
 
 ------------------------------------------------------------------------
 
-## Introduction
+# Introduction
 
-#### **The fundamental geographic data models:**
+## The fundamental geographic data models
 
 -   Vector
 
@@ -43,7 +44,7 @@ pacman::p_load(sf, terra, spData, spDataLarge)
     -   aggregates features into equally-sized cells
 
         -   consistent over space
-        -   scaleable
+        -   scalable
 
 -   the book uses sf for vector and terra for raster
 
@@ -51,22 +52,16 @@ pacman::p_load(sf, terra, spData, spDataLarge)
 
 ------------------------------------------------------------------------
 
-## Vector Data
+# Vector Data
 
--   based on points defined by coordinates in a Coordinate Reference
-    System
+-   based on points defined by coordinates in a Coordinate Reference System
 
--   Most often 2D (long, lat), possible 3D (long, lat, height; long,
-    lat, time) corresponding to x,y,z coordinate definitions
+-   Most often 2D (long, lat), possible 3D (long, lat, height; long, lat, time) corresponding to x,y,z coordinate definitions
 
-    -   London may be plotted at `c(-0.1, 51.5)` in a geographic
-        (lon/lat) CRS
-    -   It may also be plotted at `c(530000, 180000)` in British
-        National Grid - a projected coordinate system where each unit is
-        1 meter
+    -   London may be plotted at `c(-0.1, 51.5)` in a geographic (lon/lat) CRS
+    -   It may also be plotted at `c(530000, 180000)` in British National Grid - a projected coordinate system where each unit is 1 meter
 
--   **sf** gives both classes for vector data, and a command-line for
-    various libraries:
+-   **sf** gives both classes for vector data, and a command-line for various libraries:
 
     -   GDAL (geographic I/O)
 
@@ -78,93 +73,95 @@ pacman::p_load(sf, terra, spData, spDataLarge)
 
         -   switching off S2 can be done using `sf::sf_use_s2("FALSE")`
 
-#### **An introduction to simple features**
+## An introduction to simple features
 
 simple features is open standard developed by Open Geospatial Consortium
 
 -   hierarchical data model
+
 -   supports 18 geometry types
+
 -   7 core types, supported by **sf** (see **Geometry types**)
 
-**sf** supports *s2* which allows for computation on "non-planar" (that
-is, spherical) data
+**sf** supports *s2* which allows for computation on "non-planar" (that is, spherical) data
 
-This chunk demonstrates a class check on the `world` data loaded from
-**spData**:
+This chunk demonstrates a class check on the `world` data loaded from **spData**:
 
-```{r}
+```{r class}
 class(world)
 ```
 
-This chunk demonstrates a names check on the columns of the `world`
-data:
+This chunk demonstrates a names check on the columns of the `world` data:
 
-```{r}
+```{r names}
 names(world)
 ```
 
 This chunk demonstrates simple plotting functionality:
 
-```{r warning=FALSE}
+```{r plot-vector, warning=FALSE}
 plot(world)
 ```
 
-The base plot plots each column/variable as its own facet. This all
-operates under the treatment of `sf` objects as dataframes with
-geographic data stored in spatial columns (in this case, world\$geom)
+The base plot plots each column/variable as its own facet. This all operates under the treatment of `sf` objects as dataframes with geographic data stored in spatial columns (in this case, world\$geom)
 
-This chunk shows that `summary()` and similar function calls retain
-geometry columns - what the authors refer to as 'sticky behavior' -
-geometry carries along with the data unless deliberately removed.
+This chunk shows that `summary()` and similar function calls retain geometry columns - what the authors refer to as 'sticky behavior' - geometry carries along with the data unless deliberately removed.
 
-```{r}
+```{r summary-world}
 summary(world["lifeExp"])
 ```
 
 This chunk demonstrates the ease of subsetting sf data:
 
-```{r}
+```{r subsetting-world}
 world_mini <- world[1:2, 1:3]
-world_mini
+print(world_mini)
 ```
 
-Note the inclusion of spatial metadata and the retention of the `geom`
-column
+Note the inclusion of spatial metadata and the retention of the `geom` column
 
-`sf` objects are data frames with of `geom` or `geometry` list columns
-(class sfc)
+-   `sf` objects are data frames with of `geom` or `geometry` list columns (class sfc)
 
--   `sfc` objects are composed of one or more `sfg` objects
--   `sfg` objects are composed of coordinates
+-   `sfc` objects are composed of one or more `sfg` objects - `sfg` objects are composed of coordinates
 
-#### **Why simple features?**
+## Why simple features?
 
-Author-listed reasons for sf: \* Fast read/write \* Enhanced plotting \*
-treated as dataframes in most cases \* consistent naming of sf functions
-using `st_` prefix \* compatibility with %>% pipe \* tidyverse
-compatibility \* ease to convert between sf and sp if needed:
+Author-listed reasons for sf:
 
-```{r}
+-   Fast read/write
+
+-   Enhanced plotting
+
+-   treated as dataframes in most cases
+
+-   consistent naming of sf functions using `st_` prefix
+
+-   compatibility with %>% pipe
+
+-   tidyverse compatibility
+
+-   ease to convert between sf and sp if needed:
+
+```{r sf-sp}
 library(sp)
 world_sp <- as(world, "Spatial") # sf to sp
 
 world_sf <- st_as_sf(world_sp) # sp to sf
 ```
 
-#### **Basic map making**
+## Basic map making
 
--   basic maps are created with `plot()`
+basic maps are created with `plot()`
 
-    -   this defaults to multi-facet plots with one facet for each
-        variable
+-   this defaults to multi-facet plots with one facet for each variable
 
-```{r}
+```{r plot-world-subset}
 plot(world[3:6])
 ```
 
 -   single-variable plotting is easy, however
 
-```{r}
+```{r plot-world-single-var, warning=FALSE}
 plot(world["pop"])
 ```
 
@@ -173,7 +170,7 @@ plot(world["pop"])
 
 To demonstrate the above, we plot the Asian continent over the world map
 
-```{r}
+```{r plot-asia, warning=FALSE}
 world_asia <- world[world$continent == "Asia", ] #subsets asia continent
 asia <- st_union(world_asia) # union of all asian polygons into one multipolygon
 
@@ -181,20 +178,18 @@ plot(world["pop"], reset = FALSE) # plot world population, prevent reset of plot
 plot(asia, add = TRUE, col = "red") # plot asian continent over world in red color
 ```
 
-The authors demonstrate code on modifying aesthetics using `cex`
-argument (standing for "c"haracter "ex"pansion, I believe)
+The authors demonstrate code on modifying aesthetics using `cex` argument (standing for "c"haracter "ex"pansion, I believe)
 
-**Note:** this code does not center the population circles - this is
-saved for chapter end exercises.
+**Note:** this code does not center the population circles - this is saved for chapter end exercises.
 
-```{r}
+```{r plot-population, warning=FALSE}
 plot(world["continent"], reset = FALSE)
 cex = sqrt(world$pop) / 10000
 world_cents = st_centroid(world, of_largest = TRUE)
 plot(st_geometry(world_cents), add = TRUE, cex = cex)
 ```
 
-#### **Geometry types**
+## Geometry types
 
 -   POINT
 
@@ -227,21 +222,17 @@ plot(st_geometry(world_cents), add = TRUE, cex = cex)
 
 -   GEOMETRY COLLECTION
 
-    -   a simple feature that carries multiple geometries that are
-        non-connected with each other
+    -   a simple feature that carries multiple geometries that are non-connected with each other
 
-#### **The sf class**
+## The sf class
 
-This section describes the structure of sf objects, but the long and
-short of it is that sf objects are data frames with spatial information
-stored in a geometry column.
+This section describes the structure of sf objects, but the long and short of it is that sf objects are data frames with spatial information stored in a geometry column.
 
-#### **Simple feature geometries (sfg)**
+## Simple feature geometries (sfg)
 
 -   This class represents the geometry types listed above.
 
--   functions exist to create sfg objects: they follow the format of
-    `st_geometrytype(c(coordinate, coordinate))`
+-   functions exist to create sfg objects: they follow the format of `st_geometrytype(c(coordinate, coordinate))`
 
     -   `st_point()`
     -   `st_linestring()`
@@ -251,100 +242,87 @@ stored in a geometry column.
     -   `st_multipolygon()`
     -   `st_geometrycollection()`
 
--   the authors demonstrate the creation of different `sfg` objects
-    using vectors, lists, and matrices
+-   the authors demonstrate the creation of different `sfg` objects using vectors, lists, and matrices
 
-#### **Simple feature columns (sfc)**
+## Simple feature columns (sfc)
 
 -   `sfc` objects are a list of `sfg` objects, + CRS info
 -   combine geometries with `st_sfc()`
 -   set crs with the `crs` argument for `st_sfc()` or `st_sf()`
 -   `st_crs()` reports crs of sf object
 
-#### **The sfheaders package**
+## The sfheaders package
 
-This section addresses **sfheaders**, which is a faster library for
-creating and manipulating sf objects. I will reread this section as
-needed.
+This section addresses **sfheaders**, which is a faster library for creating and manipulating sf objects. I will reread this section as needed.
 
-#### Spherical geometry operations with S2
+## Spherical geometry operations with S2
 
--   `sf_use_s2()` returns the s2 engine state, and when passed `TRUE` or
-    `FALSE` can change whether the engine is used or not.
+-   `sf_use_s2()` returns the s2 engine state, and when passed `TRUE` or `FALSE` can change whether the engine is used or not.
 
-    ```{r echo=TRUE}
+```{r plot-s2-india, echo=TRUE}
+india <- world[world$name_long == "India", ]
+sf_use_s2() # is SF using s2?
 
-    india <- world[world$name_long == "India", ]
-    sf_use_s2() # is SF using s2?
+india_buffer_with_s2 <-  st_buffer(india, 1)
+plot(india_buffer_with_s2[1])
+sf_use_s2(FALSE) # turn off s2
+india_buffer_without_s2 <- st_buffer(india, 1)
+plot(india_buffer_without_s2[1])
+sf_use_s2(TRUE)
+```
 
-    india_buffer_with_s2 <-  st_buffer(india, 1)
-    plot(india_buffer_with_s2[1])
-    sf_use_s2(FALSE) # turn off s2
-    india_buffer_without_s2 <- st_buffer(india, 1)
-    plot(india_buffer_without_s2[1])
-    sf_use_s2(TRUE)
-    ```
+-   There are conditions where switching s2 off is optimal; to do this project-wide, the authors recommend adding `sf::sf_use_s2(FALSE)` to the .RProfile for the project.
 
--   There are conditions where switching s2 off is optimal; to do this
-    project-wide, the authors recommend adding `sf::sf_use_s2(FALSE)` to
-    the .RProfile for the project.
-
-## Raster data
+# Raster data
 
 -   spatial raster - continuous grid of cells(pixels)
 
-    -   most grids are "regular" - each cell has same dimensions
+-   most grids are "regular" - each cell has same dimensions
 
 -   data model consists of header and matrix
 
-    -    Header defines CRS, extent, origin
+-   Header defines CRS, extent, origin
 
-        -   Extent is dimensionality - number of rows and columns
+    -   Extent is dimensionality - number of rows and columns
+    -   origin is "starting point"/ first cell - upper left by default in **terra**
 
-        -   origin is "starting point"/ first cell - upper left by
-            default in **terra**
-
--   raster data can be processed more efficiently and faster than vector
-    data
+-   raster data can be processed more efficiently and faster than vector data
 
 -   raster cells hold a single value.
 
-    -   This value may be numeric or categorical
+-   This value may be numeric or categorical
 
 -   raster useful for continuous phenomena
 
--   Discrete phenomena can be represented in raster models, but may be
-    better represented in vector.
+-   Discrete phenomena can be represented in raster models, but may be better represented in vector.
 
-#### R packages for working with raster
+## R packages for working with raster
 
--   three key raster packages
+three key raster packages
 
-    -   **raster** (undergoing mothballing)
+-   **raster** (undergoing mothballing)
 
-    -   **terra**
+-   **terra** - focuses on regular grid
 
-        -   focuses on regular grid
+    -    traditional single or multi-band imagery
 
-        -   traditional single or multi-band imagery
+    -   built on C++ code, uses C++ pointers
 
-        -   built on C++ code, uses C++ pointers
+    -   has own `SpatVector`object for vectors
 
-        -   has own `SpatVector`object for vectors
+    -   relies on built-in functions
 
-        -   relies on built-in functions
+-   **stars**
 
-    -   **stars**
+    -   focuses on more exotic grids
 
-        -   focuses on more exotic grids
+    -   Useful for raster data cubes
 
-        -   useful for raster data cubes
+    -   stores in arrays or just a filepath to raster data
 
-        -   stores in arrays or just a filepath to raster data
+    -   more integrated with sf functions and objects
 
-        -   more integrated with sf functions and objects
-
-        -   has own methods built on existing functions
+    -   has own methods built on existing functions
 
 -   converting between `stars` and `terra` objects is easy
 
@@ -352,77 +330,63 @@ needed.
 
     -   **stars** -> **terra**, use `rast()`
 
-#### An introduction to terra
+## An introduction to terra
 
 Beginning work with the Zion National Park Data:
 
-```{r}
+```{r terra-intro, warning=FALSE}
 raster_filepath <- system.file("raster/srtm.tif", package = "spDataLarge") # store path to data
 my_rast <- rast(raster_filepath) # bring data at filepath into r environment
 class(my_rast) # ensure data is SpatRaster from terra
-
 print(my_rast) # return raster header
-
 dim(my_rast) # return rows, columns, and layers
-
 ncell(my_rast) # return cell count
-
 res(my_rast) # return spatial resolution
-
 ext(my_rast) # return spatial extent
-
 crs(my_rast) # return coordinate reference system
-
 inMemory(my_rast) # boolean return of whether data is in memory or on disk
 ```
 
 -   `help("terra-package")` for **terra** functions
 
-#### Basic map making
+## Basic map making
 
 -   **terra** includes `plot()` methods for SpatRaster objects
 
-    ```{r}
-    plot(my_rast)
-    ```
+```{r plot-terra}
+plot(my_rast)
+```
 
 -   `terra::plotRGB()` creates Red-Green-Blue plot from raster layers
-
 -   **tmap** allows raster/vector static/interactive maps
-
 -   **rasterVis** extends options
 
-#### Raster classes
+## Raster classes
 
 -   `SpatRaster` - **terra** raster objects
 
-    ```{r}
-
-    # Step 1: point to location
-    single_raster_file <- system.file("raster/srtm.tif", package = "spDataLarge")
-    # step 2: create object with rast()
-    single_rast <- rast(raster_filepath)
-    ```
+```{r terra-objects}
+# Step 1: point to location
+single_raster_file <- system.file("raster/srtm.tif", package = "spDataLarge")
+# step 2: create object with rast()
+single_rast <- rast(raster_filepath)
+```
 
 -   **terra** uses GDAL drivers.
-
 -   raster header and pointers read into RAM; not usually whole raster
-
 -   `rast()` allows for creating rasters from scratch.
 
-    ```{r}
-    new_raster <- rast(nrows = 6, ncols = 6, resolution = 0.5,
-                       xmin = -1.5, xmax = 1.5, ymin = -1.5, 
-                       ymax = 1.5, vals = 1:36)
-    ```
+```{r raster-creation}
+new_raster <- rast(nrows = 6, ncols = 6, resolution = 0.5,
+                    xmin = -1.5, xmax = 1.5, ymin = -1.5, 
+                    ymax = 1.5, vals = 1:36)
+```
 
 -   `SpatRaster` class allows multiple layers
+-   multispectral/multiband imagery
+-   raster time-series
 
-    -   multispectral/multiband imagery
-
-    -   raster time-series
-
-```{r}
+```{r multiband-raster}
 multi_raster_file <- system.file("raster/landsat.tif", package = "spDataLarge")
 multi_rast <- rast(multi_raster_file)
 print(multi_rast)
@@ -431,50 +395,96 @@ nlyr(multi_rast) # returns number of layers
 
 -   Multi-layered objects can be subset using `terra::subset()`
 
-```{r}
+```{r subset-bands}
 multi_rast3 <- subset(multi_rast, 3)
 multi_rast4 <- subset(multi_rast, "landsat_4")
 ```
 
 -   `c()` combines single layers into a multilayer object
 
-```{r}
+```{r combine-bands}
 multi_rast34 <- c(multi_rast3, multi_rast4)
 ```
 
-## Geographic and projected Coordinate Reference Systems
+# Geographic and projected Coordinate Reference Systems
 
-#### Geographic coordinate systems
+-   Know your data's CRS
 
--   Geographic coordinates identify location using lat/long (angular
-    distances)
+    -   is it Geographic or Projected?
 
--   The surface is modeled either as a sphere or an ellipsoid ("oblate
-    spheroid", in my geography courses)
+    -   **sf** objects are checked with `st_crs()`
 
-    -   Trade-offs:
+    -   **terra** objects are checked with `crs()`
+
+## Geographic coordinate systems
+
+-   Geographic coordinates identify location using lat/long (angular distances)
+
+-   The surface is modeled either as a sphere or an ellipsoid ("oblate spheroid", in my geography courses)
+
+-   Trade-offs:
 
     -   sphere is simpler
 
-    -   ellipsoid is more accurate; requires two key parameters
-
-        -   equatorial radius
-
-    -   polar radius
+    -   ellipsoid is more accurate; requires two key parameters - equatorial radius - polar radius
 
 -   Two parts of datums
 
     -   determine which ellipsoid to use
-
-    -    how to describe locations on this ellipsoid using Cartesian
-        Coordinates.
+    -   how to describe locations on this ellipsoid using Cartesian Coordinates.
 
 -   datums are geocentric (`WGS84`) or local (`NAD83`)
 
     -   geocentric are pegged to Earth's center
+    -   local are pegged to a surface at a particular location, but may result in inaccuracies at locations further away from the chosen locale of focus.
 
-    -   local are pegged to a surface at a particular location, but may
-        result in inaccuracies at locations further away from the chosen
-        locale of focus.
+## Projected coordinate reference systems
 
-#### Projected coordinate reference systems
+-   All projected CRS have a geographic CRS
+
+    -   a projection converts 3D coordinates (long lat) to Easting and Northing (x and y)
+    -   linear unit of measurement (meters, feet, miles, kilometers)
+
+-   deformations occur; different projection families preserve different properties:
+
+    -   equal-area projections preserve area
+    -   azimuthal projections preserve direction
+    -   equidistant preserve distant
+    -   conformal preserve local shapes
+
+-   Three main groups of projections:
+
+    -   conic
+
+        -   one or two tangent lines define the cone surface
+        -   mid-latitude mapping
+
+    -   cylindrical
+
+        -   one or two tangent lines define the cylindrical surface
+        -   global maps
+
+    -   planar/azimuthal
+
+        -   a point or line of tangency defines the planar projection surface
+        -   polar maps \# Units
+
+-   CRSs use spatial units for feature relationships and measurements
+
+-   **sf** has native support for units
+
+    -   useful as some CRS use meters, some use feet Units and **units** demonstration:
+
+    ```{r units-demo}
+    luxembourg <- world[world$name_long == "Luxembourg",]
+    st_area(luxembourg)
+    attributes(st_area(luxembourg))
+
+    # use set_units to change units
+    units::set_units(st_area(luxembourg), km^2)
+    ```
+
+-   be careful to know the units of rasters, as raster packages as yet do not inform you of the units of analysis
+
+    -   remember WGS84 uses Decimal Degrees
+    -   remember UTM uses Meters
