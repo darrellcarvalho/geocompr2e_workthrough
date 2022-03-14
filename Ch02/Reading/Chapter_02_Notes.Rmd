@@ -1,7 +1,7 @@
 ---
 title: "Chapter 2 Notes"
 author: "Darrell A. Carvalho"
-output: 
+output:
   html_document: 
     toc: yes
     toc_depth: 4
@@ -17,7 +17,7 @@ The code in the following chunk installs all the packages necessary for reproduc
 The authors demontrate loading libraries using the `library()` function, but I prefer using pacman's `p_load()`
 
 ```{r setup, eval = TRUE, include = TRUE}
-knitr::opts_chunk$set(message = TRUE, warning = TRUE)
+knitr::opts_chunk$set(echo = TRUE)
 # install.packages("remotes")
 # remotes::install_github("geocompr/geocompkg")
 pacman::p_load(sf, terra, spData, spDataLarge)

@@ -1,0 +1,31 @@
+---
+title: "Chapter 3 Notes"
+author: "Darrell A. Carvalho"
+output:
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    theme: spacelab
+    number_sections: yes
+---
+# Setup
+
+The code in the following chunk installs all the packages necessary for reproducing the book.
+
+The authors demontrate loading libraries using the `library()` function, but I prefer using pacman's `p_load()`
+
+```{r setup, eval = TRUE, include = TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# install.packages("remotes")
+# remotes::install_github("geocompr/geocompkg")
+pacman::p_load(sf, terra, spData, dplyr)
+```
+
+------------------------------------------------------------------------
+# Introduction
+-   Attribute data - non-spatial information associated with geometry data
+    - in raster data, this is usually stored in the header
+    - in vector data, this is the tabular data outside of the geometry columns
+
+# Vector attribute manipulation
