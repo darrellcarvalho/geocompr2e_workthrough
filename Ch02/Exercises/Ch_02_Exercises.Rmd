@@ -1,0 +1,93 @@
+---
+title: "Ch. 2 Exercises"
+author: "Darrell A. Carvalho"
+date: "3/14/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(spData)
+library(sf)
+library(terra)
+library(spDataLarge)
+```
+
+# Ch. 2 Exercises
+## E1: Use `summary()` on the geometry column of the `world` data obect that is included in the **spData** package. What does the output tell us about:
+```{r E1, echo = FALSE}
+summary(world$geom)
+```
+  * Its geometry type?
+      + Multipolygon
+  * The number of countries?
+      + 177
+  * Its coordinate reference system (CRS)?
+      + WGS84 (epsg 4326)  
+
+## E2: Run the code that 'generated' the map of the world in Section 2.2.3 (Basic map making).
+```{r E2, echo=FALSE, warning=FALSE}
+plot(world["continent"], reset = FALSE)
+cex <- sqrt(world$pop) / 10000
+world_cents  <- st_centroid(world, of_largest = TRUE)
+plot(st_geometry(world_cents), add = TRUE, cex = cex)
+```
+
+  *  Find two similarities and two differences between the image on your computer and that in the book.
+      - similarities: symbols scale with pop in both; both show increased distortion of shape nearer the poles.
+      - differences: the book figure includes curved meridians; the population circles are centered in their respective countries' polygons in the book figure.
+  * What does the `cex` argument do?
+      - `cex` controls **c**haracter **ex**pansion - in this case by defining character expansion in proportion to a population factor.
+  * Why was `cex` set to `sqrt(world$pop) / 10000`?
+      - this creates a symbol scaling factor that scales in proportion to the population size.
+
+## E3: Use `plot()` to create maps of Nigeria in context.
+  * Adjust `lwd`, `col`, and `expandBB` arguments of `plot()`.
+  * Challenge: read the documentation of `text()` and annotate the map.
+```{r E3, echo=FALSE, warning=FALSE}
+world_africa <- world[world$continent == "Africa",]
+africa <- st_union(world_africa)
+nigeria <- world[world$name_long == "Nigeria",] # subsets to only Nigeria
+nigeria |>
+  st_geometry() |>
+  plot(main = "Nigeria in Context",
+       expandBB = c(0,1.6,1,0), # expand BB at left and top
+       col = "#008753", # Nigerian Green
+       lwd = 4)
+plot(world_africa[0], add = TRUE) # plots Africa underneath
+
+name <- world[world$name_long == "Nigeria", ] # gets name data
+namecenter <- st_centroid(name) # assigns the polygon centroid to the name
+namecenter_coord <- st_coordinates(namecenter) # gets the centroid coordinates
+text(x = namecenter_coord[, 1],
+     y = namecenter_coord[, 2],
+     labels = name$name_long,
+     cex = 1.2) # plots the name annotation on the map
+```
+
+## E4: Create an empty `SpatRaster` object called `my_raster` with 10 columns and 10 rows. Assign random values between 0 and 10 to the new raster and plot it.
+```{r E4, echo=FALSE, warning=FALSE}
+my_raster <- rast(nrows = 10,
+                  ncols = 10,
+                  vals = sample(1:10, replace = TRUE, size = 100),
+                  xmin = 0,
+                  xmax = 10,
+                  ymin = 0,
+                  ymax = 10)
+plot(my_raster)
+```
+
+## E5: Read-in the `raster/nlcd.tif` file from the **spDataLarge** package. What kind of information can you get about the properties of this file?
+```{r E5, echo=FALSE, warning=FALSE}
+nlcd_filepath <- system.file("raster/nlcd.tif", package = "spDataLarge")
+nlcd_rast <- rast(nlcd_filepath)
+nlcd_rast
+plot(nlcd_rast)
+```
+  * Without calling specific functions, just calling the raster returns class, dimensions, resolution, extent, rs, source, names, and values.
+
+## E6: Check the crs of the raster/nlcd.tif file from the spDataLarge package. What kind of information can you learn from it?
+```{r E6, echo=FALSE, warning=FALSE}
+crs(nlcd_rast) %>% cat("\n")
+```
+
