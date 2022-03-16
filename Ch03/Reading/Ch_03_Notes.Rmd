@@ -29,3 +29,60 @@ pacman::p_load(sf, terra, spData, dplyr)
     - in vector data, this is the tabular data outside of the geometry columns
 
 # Vector attribute manipulation
+-   `sf` class extends base `data.frame`
+    +   one column per variable
+    +   one row per observation/*feature*
+    +   `geometry` column
+        *   `sfc` class
+-   `sf` class provides generic methods to work like regular data frames
+```{r generic-methods}
+methods(class = "sf")
+```
+-   `sf` objects store spatial and non-spatial data as columns in `data.frame`
+-   `sf` objects can extend `tibble`
+```{r world-base-functions}
+class(world) # sf object and tibble
+dim(world) # 2 dimensions, 177 rows, 11 columns
+```
+-   drop geometry to turn `sf` object into `tibble`
+    - useful for speeding up non-spatial data manipulation
+```{r drop-geometries}
+world_df <- st_drop_geometry(world)
+class(world_df) # tibble data frame
+ncol(world_df) # 10 columns (no geometry)
+```
+## Vector attribute subsetting
+-   subset with brackets `[]` or base function`subset()`
+    -   `[]` subsets rows or columns
+        - `world[i, j]` returns rows *i* and columns *j*
+            -   leaving one or other blank returns all rows or all columns
+```{r base-subsetting, echo=TRUE, message=TRUE, paged.print=TRUE}
+world[1:6, ] # rows 1:6, all columns
+world[, 1:3] # columns 1:3, all rows, + geometry column because 'sticky' sf
+world[1:6, 1:3] # rows 1:6, columns 1:3 + geometry
+world[,c("name_long", "pop")] # return columns by name, + geometry
+world[, c(T,T,F,F,F,F,F,T,T,F,F)] # logic-based subsetting of columns
+# world[, 888] throws an error because the column doesn't exist
+```
+
+
+**The following code demonstrates usefulness of logical subsetting**
+```{r logic-subset, echo=FALSE}
+small_countries <- world[world$area_km2 < 10000,]
+# same as
+small_countries <- subset(world, area_km2 < 10000)
+```
+
+-   `dplyr` subsetting can be done with:
+    -   `dplyr::filter()` or `dplyr::slice()` for rows
+    -   `dplyr::select()` for columns
+    - both are non-destructive to spatial components
+```{r dplyr-select}
+world1 <- dplyr::select(world, name_long, pop) # select name_long and pop cols
+names(world1)
+```
+
+## Chaining commands with pipes
+## Vector attribute aggregation
+## Vector attribute joining
+## Creating attributes and removing spatial information
