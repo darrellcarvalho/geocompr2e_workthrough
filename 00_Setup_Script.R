@@ -9,6 +9,7 @@
 
 # Setup from Welcome Chapter ----------------------------------------------
 if (!require(remotes)) install.packages('remotes') # checks for remotes
+remotes::install_github("rspatial/geodata")
 remotes::install_github("geocompr/geocompkg") # install/update book metapackage
 remotes::install_github("nowosad/spData") # install/update spatial datasets
 remotes::install_github("nowosad/spDataLarge") # install/update larger datasets
