@@ -13,7 +13,7 @@ output:
 
 The code in the following chunk installs all the packages necessary for reproducing the book.
 
-The authors demontrate loading libraries using the `library()` function, but I prefer using pacman's `p_load()`
+The authors demonstrate loading libraries using the `library()` function, but I prefer using pacman's `p_load()`
 
 ```{r setup, eval = TRUE, include = TRUE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -80,9 +80,35 @@ small_countries <- subset(world, area_km2 < 10000)
 ```{r dplyr-select}
 world1 <- dplyr::select(world, name_long, pop) # select name_long and pop cols
 names(world1)
+
+world2 <- dplyr::select(world, name_long:pop) # all columns between name_long and pop (inclusive)
+names(world2)
+
+world3 <- dplyr::select(world, -subregion, -area_km2) # all columns except subregion and area_km2 (inclusive)
+names(world3)
+
+world4 <- dplyr::select(world, name_long, population = pop) # renaming a column through selection
+names(world4)
+
+world5 <- world[, c("name_long", "pop")] # subset columns by name
+names(world5)[names(world5) == "pop"] = "population" # rename column manually via base R
+names(world5)
+```
+- columns can be returned as vectors via `pull()` and `dataset$column` or `dataset[["column"]]` syntaxes
+```{r vector-return}
+pull(world, pop)
+world$pop
+world[["pop"]]
+```
+
+```{r using-slice}
+slice(world, 1:6) # slice operates on rows, similar to how select operates on columns
 ```
 
 ## Chaining commands with pipes
+-   pipe allows for chaining
+  - system pipe is `|>`; tidy pipe is `%>%`
+  
 ## Vector attribute aggregation
 ## Vector attribute joining
 ## Creating attributes and removing spatial information

@@ -14,7 +14,7 @@ output:
 
 The code in the following chunk installs all the packages necessary for reproducing the book.
 
-The authors demontrate loading libraries using the `library()` function, but I prefer using pacman's `p_load()`
+The authors demonstrate loading libraries using the `library()` function, but I prefer using pacman's `p_load()`
 
 ```{r setup, eval = TRUE, include = TRUE}
 knitr::opts_chunk$set(echo = TRUE)
