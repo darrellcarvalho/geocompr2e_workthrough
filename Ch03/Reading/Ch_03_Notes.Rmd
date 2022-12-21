@@ -9,6 +9,7 @@ output:
     theme: spacelab
     number_sections: yes
 ---
+
 # Setup
 
 The code in the following chunk installs all the packages necessary for reproducing the book.
@@ -23,50 +24,64 @@ pacman::p_load(sf, terra, spData, dplyr)
 ```
 
 ------------------------------------------------------------------------
+
 # Introduction
+
 -   Attribute data - non-spatial information associated with geometry data
-    - in raster data, this is usually stored in the header
-    - in vector data, this is the tabular data outside of the geometry columns
+    -   in raster data, this is usually stored in the header
+    -   in vector data, this is the tabular data outside of the geometry columns
 
 # Vector attribute manipulation
+
 -   `sf` class extends base `data.frame`
-    +   one column per variable
-    +   one row per observation/*feature*
-    +   `geometry` column
-        *   `sfc` class
+    -   one column per variable
+    -   one row per observation/*feature*
+    -   `geometry` column
+        -   `sfc` class
 -   `sf` class provides generic methods to work like regular data frames
+
 ```{r generic-methods}
 methods(class = "sf")
 ```
+
 -   `sf` objects store spatial and non-spatial data as columns in `data.frame`
 -   `sf` objects can extend `tibble`
+
 ```{r world-base-functions}
 class(world) # sf object and tibble
 dim(world) # 2 dimensions, 177 rows, 11 columns
 ```
--   drop geometry to turn `sf` object into `tibble`
-    - useful for speeding up non-spatial data manipulation
-```{r drop-geometries}
-world_df <- st_drop_geometry(world)
-class(world_df) # tibble data frame
-ncol(world_df) # 10 columns (no geometry)
-```
-## Vector attribute subsetting
--   subset with brackets `[]` or base function`subset()`
-    -   `[]` subsets rows or columns
-        - `world[i, j]` returns rows *i* and columns *j*
-            -   leaving one or other blank returns all rows or all columns
-```{r base-subsetting, echo=TRUE, message=TRUE, paged.print=TRUE}
-world[1:6, ] # rows 1:6, all columns
-world[, 1:3] # columns 1:3, all rows, + geometry column because 'sticky' sf
-world[1:6, 1:3] # rows 1:6, columns 1:3 + geometry
-world[,c("name_long", "pop")] # return columns by name, + geometry
-world[, c(T,T,F,F,F,F,F,T,T,F,F)] # logic-based subsetting of columns
-# world[, 888] throws an error because the column doesn't exist
-```
 
+-   drop geometry to turn `sf` object into `tibble`
+
+    -   useful for speeding up non-spatial data manipulation
+
+    ```{r drop-geometries}
+    world_df <- st_drop_geometry(world)
+    class(world_df) # tibble data frame
+    ncol(world_df) # 10 columns (no geometry)
+    ```
+
+    ## Vector attribute subsetting
+
+-   subset with brackets `[]` or base function`subset()`
+
+    -   `[]` subsets rows or columns
+        -   `world[i, j]` returns rows *i* and columns *j*
+
+            -   leaving one or other blank returns all rows or all columns
+
+            ```{r base-subsetting, echo=TRUE, message=TRUE, paged.print=TRUE}
+            world[1:6, ] # rows 1:6, all columns
+            world[, 1:3] # columns 1:3, all rows, + geometry column because 'sticky' sf
+            world[1:6, 1:3] # rows 1:6, columns 1:3 + geometry
+            world[,c("name_long", "pop")] # return columns by name, + geometry
+            world[, c(T,T,F,F,F,F,F,T,T,F,F)] # logic-based subsetting of columns
+            # world[, 888] throws an error because the column doesn't exist
+            ```
 
 **The following code demonstrates usefulness of logical subsetting**
+
 ```{r logic-subset, echo=FALSE}
 small_countries <- world[world$area_km2 < 10000,]
 # same as
@@ -74,27 +89,31 @@ small_countries <- subset(world, area_km2 < 10000)
 ```
 
 -   `dplyr` subsetting can be done with:
+
     -   `dplyr::filter()` or `dplyr::slice()` for rows
     -   `dplyr::select()` for columns
-    - both are non-destructive to spatial components
-```{r dplyr-select}
-world1 <- dplyr::select(world, name_long, pop) # select name_long and pop cols
-names(world1)
+    -   both are non-destructive to spatial components
 
-world2 <- dplyr::select(world, name_long:pop) # all columns between name_long and pop (inclusive)
-names(world2)
+    ```{r dplyr-select}
+    world1 <- dplyr::select(world, name_long, pop) # select name_long and pop cols
+    names(world1)
 
-world3 <- dplyr::select(world, -subregion, -area_km2) # all columns except subregion and area_km2 (inclusive)
-names(world3)
+    world2 <- dplyr::select(world, name_long:pop) # all columns between name_long and pop (inclusive)
+    names(world2)
 
-world4 <- dplyr::select(world, name_long, population = pop) # renaming a column through selection
-names(world4)
+    world3 <- dplyr::select(world, -subregion, -area_km2) # all columns except subregion and area_km2 (inclusive)
+    names(world3)
 
-world5 <- world[, c("name_long", "pop")] # subset columns by name
-names(world5)[names(world5) == "pop"] = "population" # rename column manually via base R
-names(world5)
-```
-- columns can be returned as vectors via `pull()` and `dataset$column` or `dataset[["column"]]` syntaxes
+    world4 <- dplyr::select(world, name_long, population = pop) # renaming a column through selection
+    names(world4)
+
+    world5 <- world[, c("name_long", "pop")] # subset columns by name
+    names(world5)[names(world5) == "pop"] = "population" # rename column manually via base R
+    names(world5)
+    ```
+
+-   columns can be returned as vectors via `pull()` and `dataset$column` or `dataset[["column"]]` syntaxes
+
 ```{r vector-return}
 pull(world, pop)
 world$pop
@@ -106,15 +125,18 @@ slice(world, 1:6) # slice operates on rows, similar to how select operates on co
 ```
 
 ## Chaining commands with pipes
+
 -   pipe allows for chaining
-  - system pipe is `|>`; tidy pipe is `%>%`
+-   system pipe is `|>`; tidy pipe is `%>%`
+
 ```{r chaining}
 world7 <- world %>%
   filter(continent == "Asia") %>%
   dplyr::select(name_long, continent) %>%
   slice(1:5)
 ```
-- piping is much more readable in many peoples' minds than nesting (see below)
+
+-   piping is much more readable in many peoples' minds than nesting (see below)
 
 ```{r nesting}
 world8 <- slice(
@@ -123,7 +145,8 @@ world8 <- slice(
     name_long, continent),
   1:5)
 ```
-- splitting operations into self-contained lines is useful for debugging or package development.
+
+-   splitting operations into self-contained lines is useful for debugging or package development.
 
 ```{r split-lines}
 world9_filtered <- filter(world, continent == "Asia")
@@ -132,19 +155,24 @@ world9 <- slice(world9_selected, 1:5)
 ```
 
 ## Vector attribute aggregation
-- Aggregation summarizes data into grouping variables
-  - Calculate continent population based on country-level data
-- base aggregate() will return either a non-spatial data.frame or a sf object, depending on the order used in the function call
+
+-   Aggregation summarizes data into grouping variables
+    -   Calculate continent population based on country-level data
+-   base aggregate() will return either a non-spatial data.frame or a sf object, depending on the order used in the function call
+
 ```{r cont-pop-nonspatial}
 world_agg1 <- aggregate(pop ~ continent, FUN = sum, data = world, na.rm = TRUE)
 class(world_agg1)
 ```
+
 ```{r cont-pop-spatial}
 world_agg2 <- aggregate(world["pop"], list(world$continent), FUN = sum,
                         na.rm = TRUE)
 class(world_agg2)
 ```
-- dplyr aggregation uses group_by()
+
+-   dplyr aggregation uses group_by()
+
 ```{r dplyr-aggregation}
 world %>% 
   group_by(continent) %>% 
@@ -152,7 +180,9 @@ world %>%
   world_agg3
 class(world_agg3) # outputs a tibble
 ```
-- this approach allows more flexability in output generation; see below:
+
+-   this approach allows more flexability in output generation; see below:
+
 ```{r dplyr-aggregation-computation}
 world %>% 
   group_by(continent) %>% 
@@ -163,6 +193,7 @@ world %>%
   world_agg4
 world_agg4
 ```
+
 ```{r aggregation-chaining}
 world %>% 
   st_drop_geometry() %>% # remove spatial column(s)
@@ -178,6 +209,59 @@ world %>%
 world_agg5
 ```
 
-
 ## Vector attribute joining
+
+-   utilizes common table joins from relational data models
+    -   dplyr provides `left_join() and`inner_join()\` among others
+    -   these joins follow SQL conventions
+
+```{r coffee-join}
+world_coffee <- left_join(world, coffee_data) # left_join preserves first set
+class(world_coffee)
+
+names(world_coffee)
+
+plot(world_coffee["coffee_production_2017"])
+```
+
+-   Joins require a key variable in both/all datasets
+    -   dplyr uses any var with name matches
+    -   where mismatches occur, either rename the key variable in one set or use by argument to specify join var
+
+```{r join-with-by}
+coffee_renamed <- rename(coffee_data, nm = name_long) # rename for demo
+world_coffee2 <- left_join(world, coffee_renamed, by = c(name_long = "nm"))
+```
+
+-   With left_join, all rows from first set are kept; empty cells filled with N/A
+
+-   inner_join keeps only values from original set that have a match with new set
+
+```{r inner-join}
+world_coffee_inner <- inner_join(world, coffee_data)
+nrow(world_coffee_inner)
+setdiff(coffee_data$name_long, world$name_long)
+# DRC is missing because of abbreviation
+```
+
+```{r data-preprocessing-for-fixed-join}
+drc <- stringr::str_subset(world$name_long, "Dem*.+Congo") # correct name
+coffee_data$name_long[grepl("Congo,", coffee_data$name_long)] = drc # fix coffee_data
+```
+
+```{r inner-join-redux}
+world_coffee_match <- inner_join(world, coffee_data)
+nrow(world_coffee_match)
+```
+
+-   operating in the other direction will return a tibble, as output tends to match the first input in the function
+
+```{r joining-position-swapped}
+coffee_world <- left_join(coffee_data, world) # coffee first, world second
+class(coffee_world)
+
+# Coerce it back to spatial with st_as_sf()
+st_as_sf(coffee_world)
+```
+
 ## Creating attributes and removing spatial information
