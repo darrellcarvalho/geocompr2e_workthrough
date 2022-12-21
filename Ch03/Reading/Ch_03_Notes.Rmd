@@ -133,5 +133,51 @@ world9 <- slice(world9_selected, 1:5)
 
 ## Vector attribute aggregation
 - Aggregation summarizes data into grouping variables
+  - Calculate continent population based on country-level data
+- base aggregate() will return either a non-spatial data.frame or a sf object, depending on the order used in the function call
+```{r cont-pop-nonspatial}
+world_agg1 <- aggregate(pop ~ continent, FUN = sum, data = world, na.rm = TRUE)
+class(world_agg1)
+```
+```{r cont-pop-spatial}
+world_agg2 <- aggregate(world["pop"], list(world$continent), FUN = sum,
+                        na.rm = TRUE)
+class(world_agg2)
+```
+- dplyr aggregation uses group_by()
+```{r dplyr-aggregation}
+world %>% 
+  group_by(continent) %>% 
+  summarize(pop = sum(pop, na.rm = TRUE)) -> 
+  world_agg3
+class(world_agg3) # outputs a tibble
+```
+- this approach allows more flexability in output generation; see below:
+```{r dplyr-aggregation-computation}
+world %>% 
+  group_by(continent) %>% 
+  summarize(
+    pop = sum(pop, na.rm = TRUE), # sums the population to the continent
+    `area_sqkm` = sum(area_km2), # finds the area of the continent
+    n = n()) -> # counts the number of countries in each continent
+  world_agg4
+world_agg4
+```
+```{r aggregation-chaining}
+world %>% 
+  st_drop_geometry() %>% # remove spatial column(s)
+  dplyr::select(pop, continent, area_km2) %>%  # keep columns we care about
+  group_by(continent) %>% # Aggregation value
+  summarize(Pop = sum(pop, na.rm = TRUE), # summarize pop
+            Area = sum(area_km2),         # summarize area
+            N = n()) %>%                  # count of countries
+  mutate(Density = round(Pop / Area)) %>% # compute pop density
+  slice_max(Pop, n = 3) %>%               # keep top three
+  arrange(desc(N)) ->                     # sort by number of countries
+  world_agg5
+world_agg5
+```
+
+
 ## Vector attribute joining
 ## Creating attributes and removing spatial information
