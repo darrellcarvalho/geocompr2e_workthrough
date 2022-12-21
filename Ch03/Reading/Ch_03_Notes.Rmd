@@ -265,3 +265,35 @@ st_as_sf(coffee_world)
 ```
 
 ## Creating attributes and removing spatial information
+- base R attribute creation
+```{r base-r-area-column}
+world_new <- world # prevent original data corruption
+world_new$pop_dens <- world_new$pop / world_new$area_km2
+```
+
+- dplyr provides `mutate()` and `transmute()` functions
+  - `mutate()` adds new columns at the end
+  - `transmute()` drops non-specified columns
+```{r using-mutate}
+world %>% 
+  mutate(pop_dens = pop / area_km2)
+```
+
+```{r using-transmute}
+world %>% 
+  transmute(pop_dens = pop / area_km2)
+```
+
+- `tidyr::unite()` joins existing columns
+  - `sep` argument defines a separator
+  - `remove` argument determines whether to drop original columns
+
+```{r tidyr-unite}
+world %>% 
+  tidyr::unite("con_reg",
+               continent:region_un,
+               sep = ":",
+               remove = TRUE) ->
+  world_unite
+```
+
