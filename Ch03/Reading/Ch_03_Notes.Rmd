@@ -108,7 +108,30 @@ slice(world, 1:6) # slice operates on rows, similar to how select operates on co
 ## Chaining commands with pipes
 -   pipe allows for chaining
   - system pipe is `|>`; tidy pipe is `%>%`
-  
+```{r chaining}
+world7 <- world %>%
+  filter(continent == "Asia") %>%
+  dplyr::select(name_long, continent) %>%
+  slice(1:5)
+```
+- piping is much more readable in many peoples' minds than nesting (see below)
+
+```{r nesting}
+world8 <- slice(
+  dplyr::select(
+    filter(world, continent == "Asia"),
+    name_long, continent),
+  1:5)
+```
+- splitting operations into self-contained lines is useful for debugging or package development.
+
+```{r split-lines}
+world9_filtered <- filter(world, continent == "Asia")
+world9_selected <- dplyr::select(world9_filtered, continent)
+world9 <- slice(world9_selected, 1:5)
+```
+
 ## Vector attribute aggregation
+- Aggregation summarizes data into grouping variables
 ## Vector attribute joining
 ## Creating attributes and removing spatial information
