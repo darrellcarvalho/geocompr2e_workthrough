@@ -297,3 +297,30 @@ world %>%
   world_unite
 ```
 
+- `tidyr::separate()` splits a column into multiples using a splitting character
+```{r tidyr-separate}
+world_unite %>% 
+  tidyr::separate("con_reg",
+                  c("continent", "region_un"),
+                  sep = ":") -> world_separate
+```
+
+- `dplyr::rename()` replaces an old name with a new one
+- `stats::setName()` takes a character vector to name each column
+```{r dplyr-rename}
+world %>% 
+  dplyr::rename(name = name_long)
+```
+```{r base-setNames}
+new_names <- c("i", "n", "c", "r", "s", "t", "a", "p", "l",
+               "gP", "geom")
+world_new_names <-  world %>% 
+  setNames(new_names)
+```
+
+- Geometry can be removed/dropped with `st_drop_geometry()`
+```{r geometry-drop}
+world_data <- world %>% st_drop_geometry()
+class(world_data)
+```
+
