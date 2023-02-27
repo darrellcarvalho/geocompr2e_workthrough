@@ -265,28 +265,32 @@ st_as_sf(coffee_world)
 ```
 
 ## Creating attributes and removing spatial information
-- base R attribute creation
+
+-   base R attribute creation
+
 ```{r base-r-area-column}
 world_new <- world # prevent original data corruption
 world_new$pop_dens <- world_new$pop / world_new$area_km2
 ```
 
-- dplyr provides `mutate()` and `transmute()` functions
-  - `mutate()` adds new columns at the end
-  - `transmute()` drops non-specified columns
-```{r using-mutate}
-world %>% 
-  mutate(pop_dens = pop / area_km2)
-```
+-   dplyr provides `mutate()` and `transmute()` functions
+
+    -   `mutate()` adds new columns at the end
+    -   `transmute()` drops non-specified columns
+
+    ```{r using-mutate}
+    world %>% 
+      mutate(pop_dens = pop / area_km2)
+    ```
 
 ```{r using-transmute}
 world %>% 
   transmute(pop_dens = pop / area_km2)
 ```
 
-- `tidyr::unite()` joins existing columns
-  - `sep` argument defines a separator
-  - `remove` argument determines whether to drop original columns
+-   `tidyr::unite()` joins existing columns
+    -   `sep` argument defines a separator
+    -   `remove` argument determines whether to drop original columns
 
 ```{r tidyr-unite}
 world %>% 
@@ -297,7 +301,8 @@ world %>%
   world_unite
 ```
 
-- `tidyr::separate()` splits a column into multiples using a splitting character
+-   `tidyr::separate()` splits a column into multiples using a splitting character
+
 ```{r tidyr-separate}
 world_unite %>% 
   tidyr::separate("con_reg",
@@ -305,12 +310,14 @@ world_unite %>%
                   sep = ":") -> world_separate
 ```
 
-- `dplyr::rename()` replaces an old name with a new one
-- `stats::setName()` takes a character vector to name each column
+-   `dplyr::rename()` replaces an old name with a new one
+-   `stats::setName()` takes a character vector to name each column
+
 ```{r dplyr-rename}
 world %>% 
   dplyr::rename(name = name_long)
 ```
+
 ```{r base-setNames}
 new_names <- c("i", "n", "c", "r", "s", "t", "a", "p", "l",
                "gP", "geom")
@@ -318,63 +325,75 @@ world_new_names <-  world %>%
   setNames(new_names)
 ```
 
-- Geometry can be removed/dropped with `st_drop_geometry()`
+-   Geometry can be removed/dropped with `st_drop_geometry()`
+
 ```{r geometry-drop}
 world_data <- world %>% st_drop_geometry()
 class(world_data)
 ```
+
 # Manipulating Raster Objects
-- `rast()` used to create a raster
-  - nrows, ncols argument sets rows and columns
-  - resolution argument sets resolution; supercedes nrows, ncols
-  - `xmin`, `xmax`, `ymin`, `ymax` set extents
-  - `vals` sets raster values
-```{r raster-setup}
-# This is to set up the raster data used for the remainder of the section
-elev <- rast(nrows = 6, ncols = 6, # number of rows and columns
-            #resolution = 0.5, 
-            xmin = -1.5, xmax = 1.5, # x extent
-            ymin = -1.5, ymax = 1.5, # y extent
-            vals = 1:36) # raster values
 
-grain_order <- c("clay", "silt", "sand")
-grain_char <- sample(grain_order, 36, replace = TRUE)
-grain_fact <- factor(grain_char, levels = grain_order)
-grain <- rast(nrows = 6, ncols = 6, 
-              resolution = 0.5, 
-              xmin = -1.5, xmax = 1.5, 
-              ymin = -1.5, ymax = 1.5,
-              vals = grain_fact)
-```
+-   `rast()` used to create a raster
 
-- Raster Attribute Table (RAT) stored as a list of data frames
-  - RAT can be viewed with ?cats()
-  - `levels()` can be used to modify or view factor levels
-  - categorical rasters store a color table, viewable in *terra* with `coltab()`
-  - this info can be saved to GeoTIFF
-```{r cats-levels}
-cats(grain)
+    -   nrows, ncols argument sets rows and columns
+    -   resolution argument sets resolution; supercedes nrows, ncols
+    -   `xmin`, `xmax`, `ymin`, `ymax` set extents
+    -   `vals` sets raster values
 
-levels(grain) <- data.frame(value = c(0, 1, 2),
-                            wetness = c("wet", "moist", "dry"))
-levels(grain)
-```
-## Raster subsetting
-- Subset rasters with `[` syntax from base R
-  - this syntax accepts Row,Column indexing; Cell ID; Coordinates; another 
-    spatial object
-```{r non-spatial-raster-subset}
-elev[1, 1] # row 1, column 1
-elev[1] # Cell ID 1
-```
-- Subset multi-layered objects with bracket notation returns cell values
-    for each layer.
+    ```{r raster-setup}
+    # This is to set up the raster data used for the remainder of the section
+    elev <- rast(nrows = 6, ncols = 6, # number of rows and columns
+                #resolution = 0.5, 
+                xmin = -1.5, xmax = 1.5, # x extent
+                ymin = -1.5, ymax = 1.5, # y extent
+                vals = 1:36) # raster values
+
+    grain_order <- c("clay", "silt", "sand")
+    grain_char <- sample(grain_order, 36, replace = TRUE)
+    grain_fact <- factor(grain_char, levels = grain_order)
+    grain <- rast(nrows = 6, ncols = 6, 
+                  resolution = 0.5, 
+                  xmin = -1.5, xmax = 1.5, 
+                  ymin = -1.5, ymax = 1.5,
+                  vals = grain_fact)
+    ```
+
+-   Raster Attribute Table (RAT) stored as a list of data frames
+
+    -   RAT can be viewed with ?cats()
+    -   `levels()` can be used to modify or view factor levels
+    -   categorical rasters store a color table, viewable in *terra* with `coltab()`
+    -   this info can be saved to GeoTIFF
+
+    ```{r cats-levels}
+    cats(grain)
+
+    levels(grain) <- data.frame(value = c(0, 1, 2),
+                                wetness = c("wet", "moist", "dry"))
+    levels(grain)
+    ```
+
+    ## Raster subsetting
+
+-   Subset rasters with `[` syntax from base R
+
+    -   this syntax accepts Row,Column indexing; Cell ID; Coordinates; another spatial object
+
+    ```{r non-spatial-raster-subset}
+    elev[1, 1] # row 1, column 1
+    elev[1] # Cell ID 1
+    ```
+
+-   Subset multi-layered objects with bracket notation returns cell values for each layer.
+
 ```{r two-layer-subsetting}
 two_layers = c(grain, elev) # create a two-layer raster
 two_layers[1] # return values for cell 1 in each layer
 ```
-  
-- modify values with the subset operations
+
+-   modify values with the subset operations
+
 ```{r modifying-in-subset}
 elev[1,1] = 0
 elev[1,1]
@@ -383,30 +402,32 @@ elev[1,1]
 elev[1, c(1,2)] = 0
 ```
 
-- modifying values of multilayered rasters requires a matrix with columns for
-  layers and rows as cells to be replaced.
+-   modifying values of multilayered rasters requires a matrix with columns for layers and rows as cells to be replaced.
+
 ```{r multilayer-modification}
 two_layers <- c(grain, elev)
 two_layers[1] = cbind(c(1), c(4))
 two_layers[]
 ```
-  
+
 ## Summarizing raster objects
-- many summarizing functionality comes from *terra*
-  - calling the raster by name returns min and max
-  - `summary()` returns min, max, quartiles, and count of NAs in Continuous
-  - for categoricals, it returns the numbers of cells in each category
-  - `global()` provides computation of other summary stats
-```{r raster-summary}
-elev            # return description of elev
-summary(elev)   # summary stats of elev
-global(elev, sd)# standard deviation of elev
-hist(elev)      # histogram of elev
-boxplot(elev)   # boxplot of elev
-density(elev)   # plot probability density of elev
 
-grain           # return description of grain
-summary(grain)  # summary stats of grain
-freq(grain)     # frequency tables for grain
-```
+-   many summarizing functionality comes from *terra*
 
+    -   calling the raster by name returns min and max
+    -   `summary()` returns min, max, quartiles, and count of NAs in Continuous
+    -   for categoricals, it returns the numbers of cells in each category
+    -   `global()` provides computation of other summary stats
+
+    ```{r raster-summary}
+    elev            # return description of elev
+    summary(elev)   # summary stats of elev
+    global(elev, sd)# standard deviation of elev
+    hist(elev)      # histogram of elev
+    boxplot(elev)   # boxplot of elev
+    density(elev)   # plot probability density of elev
+
+    grain           # return description of grain
+    summary(grain)  # summary stats of grain
+    freq(grain)     # frequency tables for grain
+    ```

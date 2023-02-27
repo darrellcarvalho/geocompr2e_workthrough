@@ -1,0 +1,92 @@
+---
+title: "Chapter 3 Exercises"
+author: "Darrell A. Carvalho"
+output:
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    theme: spacelab
+    number_sections: yes
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, eval = TRUE, include = TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# install.packages("remotes")
+# remotes::install_github("geocompr/geocompkg")
+pacman::p_load(sf, terra, spData, dplyr,tmap)
+data(us_states)
+data(us_states_df)
+```
+
+# Exercise 1:
+
+Create a new object called `us_states_name` that contains only the
+`NAME` column from the `us_states` object using either base R (`[`) or
+tidyverse(`select()`) syntax. What is the cost of the new object and
+what makes it geographic?
+
+```{r}
+us_states_name <- us_states %>% select(NAME)
+class(us_states_name)
+# the sf column is sticky, and is what keeps data.frames spatial
+```
+
+# Exercise 2:
+
+Select columns from the `us_states` object which contain population
+data. Obtain the same result using a different command (bonus: try to
+find three ways of obtaining the same result). Hint: try to use helper
+functions, such as `contains` or `matches` from **dplyr** (see
+`?contains`).
+
+```{r}
+us_states %>% select(contains("Pop"))
+us_states %>% select(starts_with("total_pop"))
+us_states[,5:6]
+us_states %>% select(matches("total"))
+```
+
+# Exercise 3:
+
+Find all states with the following characteristics (bonus find and plot
+them):
+
+-   Belong to the Midwest region.
+
+-   Belong to the West region, have an area below 250,000 km2and in 2015
+    a population greater than 5,000,000 residents (hint: you may need to
+    use the function units::set_units() or as.numeric()).
+
+-   Belong to the South region, had an area larger than 150,000 km2 or a
+    total population in 2015 larger than 7,000,000 residents.
+
+```{r}
+# Midwest States
+us_states %>%
+  filter(REGION=="Midwest") %>%
+  qtm(text="NAME")
+# Western States with an area under 250K km^2 and a 2015 population over 5 mil
+us_states %>%
+  filter(REGION=="West" & (as.numeric(AREA) < 250000 & total_pop_15 > 5000000)) %>%
+  qtm(text="NAME", fill="total_pop_15")
+# Southern states with an area over 150K km2 and a 2015 pop over 7 mil
+us_states %>%
+  filter(REGION=="South" & as.numeric(AREA) > 150000 & total_pop_15 > 7000000) %>%
+  qtm(text="NAME", fill="total_pop_15")
+
+```
+# Exercise 4:
+What was the total population in 2015 in the `us_states` dataset? What was the 
+minimum and maximum total population in 2015?
+```{r}
+us_states$total_pop_15 %>% sum()
+us_states %>% 
+  st_drop_geometry() %>% 
+  select(total_pop_15) %>% 
+  summary()
+```
+
