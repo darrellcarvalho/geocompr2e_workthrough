@@ -79,14 +79,88 @@ us_states %>%
   qtm(text="NAME", fill="total_pop_15")
 
 ```
+
 # Exercise 4:
-What was the total population in 2015 in the `us_states` dataset? What was the 
-minimum and maximum total population in 2015?
+
+What was the total population in 2015 in the `us_states` dataset? What
+was the minimum and maximum total population in 2015?
+
 ```{r}
 us_states$total_pop_15 %>% sum()
 us_states %>% 
   st_drop_geometry() %>% 
   select(total_pop_15) %>% 
   summary()
+```
+
+# Exercise 5:
+
+How many states are there in each region?
+
+```{r}
+us_states %>% 
+  group_by(REGION) %>% 
+  count()
+```
+
+# Exercise 6:
+
+What was the minimum and maximum total population in 2015 in each
+region? What was the total population in 2015 in each region?
+
+```{r}
+us_states %>% 
+  st_drop_geometry() %>% 
+  group_by(REGION) %>% 
+  summarise(min = min(total_pop_15), 
+            max = max(total_pop_15), 
+            total = sum(total_pop_15))
+```
+
+# Exercise 7:
+
+Add variables from us_states_df to us_states, and create a new object
+called us_states_stats. What function did you use and why? Which
+variable is the key in both datasets? What is the class of the new
+object?
+
+```{r}
+us_state_stats <- us_states %>% 
+  left_join(us_states_df, by = c("NAME" = "state"))
+class(us_state_stats) # sticky sf
+```
+
+# Exercise 8:
+
+`us_states_df` has two more rows than `us_states`. How can you find them? (hint: try to use the `dplyr::anti_join()` function)
+
+```{r}
+us_states_df %>% anti_join(us_states, by = c("state" = "NAME"))
+```
+
+# Exercise 9:
+
+What was the population density in 2015 in each state? What was the population density in 2010 in each state?
+
+```{r}
+us_states_dens <- us_states %>% mutate(pop_dens_10 = total_pop_10/as.numeric(AREA), pop_dens_15 = total_pop_15/as.numeric(AREA))
+```
+
+# Exercise 10:
+
+How much has population density changed between 2010 and 2015 in each state? Calculate the change in percentages and map them.
+
+```{r}
+us_states_dens %>%
+  mutate(pop_dens_change = ((pop_dens_15-pop_dens_10)/pop_dens_10) * 100) %>%
+  qtm(fill = "pop_dens_change")
+```
+# Exercise 11:
+Change the columns’ names in `us_states` to lowercase. (Hint: helper functions - `tolower()` and `colnames()` may help.)
+
+```{r}
+us_states %>% 
+  colnames %>% 
+  tolower()
 ```
 
