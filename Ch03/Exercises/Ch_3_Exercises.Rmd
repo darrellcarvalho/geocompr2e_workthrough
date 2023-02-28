@@ -119,8 +119,8 @@ us_states %>%
 
 # Exercise 7:
 
-Add variables from us_states_df to us_states, and create a new object
-called us_states_stats. What function did you use and why? Which
+Add variables from `us_states_df` to `us_states`, and create a new object
+called `us_states_stats`. What function did you use and why? Which
 variable is the key in both datasets? What is the class of the new
 object?
 
@@ -144,6 +144,7 @@ What was the population density in 2015 in each state? What was the population d
 
 ```{r}
 us_states_dens <- us_states %>% mutate(pop_dens_10 = total_pop_10/as.numeric(AREA), pop_dens_15 = total_pop_15/as.numeric(AREA))
+us_states_dens
 ```
 
 # Exercise 10:
@@ -155,7 +156,9 @@ us_states_dens %>%
   mutate(pop_dens_change = ((pop_dens_15-pop_dens_10)/pop_dens_10) * 100) %>%
   qtm(fill = "pop_dens_change")
 ```
+
 # Exercise 11:
+
 Change the columns’ names in `us_states` to lowercase. (Hint: helper functions - `tolower()` and `colnames()` may help.)
 
 ```{r}
@@ -163,4 +166,59 @@ us_states %>%
   colnames %>% 
   tolower()
 ```
+# Exercise 12:
+Using `us_states` and `us_states_df` create a new object called `us_states_sel`. The new object should have only two variables - `median_income_15` and `geometry`. Change the name of the `median_income_15` column to Income.
 
+```{r}
+us_states_sel <- us_states %>% 
+  left_join(us_states_df, by = c("NAME" = "state")) %>% 
+  transmute(Income = median_income_15)
+us_states_sel
+```
+
+# Exercise 13:
+
+Calculate the change in the number of residents living below the poverty level between 2010 and 2015 for each state. (Hint: See `?us_states_df` for documentation on the poverty level columns.) Bonus: Calculate the change in the percentage of residents living below the poverty level in each state.
+
+```{r}
+us_pov_pct <- us_state_stats %>% mutate(pct_blw_pvt_10 =
+                               poverty_level_10 / total_pop_10 * 100,
+                             pct_blw_pvt_15 = 
+                               poverty_level_15 / total_pop_15 * 100,
+                             pct_pt_change = (pct_blw_pvt_15 - pct_blw_pvt_10))
+us_pov_pct
+```
+
+# Exercise 14:
+
+What was the minimum, average and maximum state’s number of people living below the poverty line in 2015 for each region? Bonus: What is the region with the largest increase in people living below the poverty line?
+
+```{r region-poverty-summary}
+us_state_stats %>%
+  group_by(REGION) %>% 
+  summarise(min = min(poverty_level_15), 
+            max = max(poverty_level_15), 
+            average = mean(poverty_level_15))
+```
+```{r region-poverty-change}
+us_state_stats %>%
+  group_by(REGION) %>% 
+  summarise(region_pov_rate_10 =
+              sum(poverty_level_10) /sum(total_pop_10) * 100,
+            region_pov_rate_15 =
+              sum(poverty_level_15) /sum(total_pop_15) * 100,
+            pct_pt_change = region_pov_rate_15 - region_pov_rate_10
+            ) %>% st_drop_geometry()
+```
+
+# Exercise 15:
+
+Create a raster from scratch with nine rows and columns and a resolution of 0.5 decimal degrees (WGS84). Fill it with random numbers. Extract the values of the four corner cells.
+
+# Exercise 16:
+
+What is the most common class of our example raster `grain`?
+
+# Exercise 17:
+
+Plot the histogram and the boxplot of the `dem.tif` file from the spDataLarge package (`system.file("raster/dem.tif", package = "spDataLarge")`).
