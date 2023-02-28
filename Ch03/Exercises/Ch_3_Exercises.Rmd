@@ -16,7 +16,7 @@ editor_options:
 ```{r setup, eval = TRUE, include = TRUE}
 knitr::opts_chunk$set(echo = TRUE)
 # install.packages("remotes")
-# remotes::install_github("geocompr/geocompkg")
+# remotes::install_github("geocompx/geocompkg")
 pacman::p_load(sf, terra, spData, dplyr,tmap)
 data(us_states)
 data(us_states_df)
@@ -214,11 +214,33 @@ us_state_stats %>%
 # Exercise 15:
 
 Create a raster from scratch with nine rows and columns and a resolution of 0.5 decimal degrees (WGS84). Fill it with random numbers. Extract the values of the four corner cells.
+```{r}
+rasta <- rast(nrows = 9,ncols = 9,crs = "epsg:4326",xmin = 0,xmax = 4.5,ymin = 0,ymax = 4.5,vals = rnorm(81))
+c(rasta[1,1], rasta[1,9], rasta[9,9], rasta[9, 1])
+```
 
 # Exercise 16:
 
 What is the most common class of our example raster `grain`?
 
+```{r}
+grain_order = c("clay", "silt", "sand")
+grain_char = sample(grain_order, 36, replace = TRUE)
+grain_fact = factor(grain_char, levels = grain_order)
+grain = rast(nrows = 6, ncols = 6, 
+             xmin = -1.5, xmax = 1.5, ymin = -1.5, ymax = 1.5,
+             vals = grain_fact)
+cats(grain)
+```
+
+
 # Exercise 17:
 
 Plot the histogram and the boxplot of the `dem.tif` file from the spDataLarge package (`system.file("raster/dem.tif", package = "spDataLarge")`).
+
+```{r}
+dem <- rast(system.file("raster/dem.tif", package = "spDataLarge"))
+dem %>% hist()
+dem %>% boxplot()
+```
+
