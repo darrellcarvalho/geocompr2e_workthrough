@@ -1,0 +1,134 @@
+---
+title: "Chapter 4 Notes"
+author: "Darrell A. Carvalho"
+output:
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    theme: spacelab
+    number_sections: yes
+---
+
+# Setup
+
+```{r setup, eval = TRUE, include = TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# install.packages("remotes")
+# remotes::install_github("geocompx/geocompkg")
+pacman::p_load(sf, terra, spData, dplyr)
+elev = rast(system.file("raster/elev.tif", package = "spData"))
+grain = rast(system.file("raster/grain.tif", package = "spData"))
+```
+
+# Introduction
+
+-   Chapter demonstrates **spatial operations** or "how spatial objects can be modified ... based on their location and shape."
+    -   Included are **spatial subsetting**, **spatial joining**, and **spatial aggregation**
+-   **Spatial joins** include a variety of means for joining - from **intersect** to **within distance** operations, as all spatial objects have a **spatial relationship**.
+    -   distance calculations help us determine the strength and/or relevance of this relationship.
+    
+-   **Spatial operations** on raster objects:
+    -   **subsetting**
+    -   **merging**
+    -   **Map Algebra**
+        -   **local**
+        -   **focal**
+        -   **zonal**
+        -   **global**
+
+# Spatial operations on vector data
+## Spatial Subsetting
+-   **Spatial subsetting**: "process of taking a spatial object and returning ... only features that *relate* in space to another object."
+    -   can be created with square brackets `[`
+        -   syntax: `x[y, , op = st_intersects]`
+            -   **x** is an `sf` object to be subset 
+            -   **y** is the 'subsetting object'
+            -   `op = st_intersects` is an optional topological argument
+    -   Demonstration of spatial subsetting using `nz` and `nz_height`
+```{r canterbury-object}
+canterbury <- nz |> filter(Name == "Canterbury")
+canterbury_height <- nz_height[canterbury, ]
+# nz_height[canterbury, , op = st_disjoint] %>% plot()
+```
+-   **spatial subsetting** can also be performed with **topological operators**
+    -   the code chunk below returns a **sparse geometry binary predicate**
+        -   `sgbp` are *sparse matrices*, lists of integer vectors with ordered, TRUE indices for each row.
+        -   in other words, it does not store the entire matrix, instead storing only non-zero values and their location within a matrix, thus removing zero-values and their storage requirements.
+```{r topological-operator}
+sel_sgbp <- st_intersects(nz_height, canterbury)
+sel_sgbp
+```
+    - This chunk can then be used to subset
+```{r topological-operator-subsetting}
+sel_logical <- lengths(sel_sgbp) > 0
+canterbury_height2 <- nz_height[sel_logical, ]
+```
+```{r topological-operator-subetting-with-st_filter}
+canterbury_height3 <- nz_height |>
+  st_filter(y = canterbury, .predicate = st_intersects)
+```
+
+## Topological relations
+-   A topological relationship defines spatial relations between objects.
+  -    **Binary topological relationships** are logical relations (`T` or `F`)
+  -   these logic statements are made about two objects
+      -   the objects are defined by ordered sets of points that define the points, lines, and polygons.
+- `sf` has 'binary predicates' - functions that test topological relations
+```{r topological-relations-demo}
+# Create a polygon
+polygon_matrix <- cbind(
+  x = c(0,0,1,1,0),
+  y = c(0,1,1,0.5,0)
+)
+polygon_sfc <- st_sfc(st_polygon(list(polygon_matrix)))
+
+# create line
+line_sfc <- st_sfc(st_linestring(cbind(
+  x = c(0.4, 1),
+  y = c(0.2, 0.5)
+)))
+
+# create points
+point_df <- data.frame(
+  x = c(0.2, 0.7, 0.4),
+  y = c(0.1, 0.2, 0.8)
+)
+
+point_sf <- st_as_sf(point_df, coords = c("x", "y"))
+```
+
+```{r predicate-checks}
+st_intersects(point_sf, polygon_sfc) # do any of the points intersect the poly?
+st_within(point_sf, polygon_sfc) # are any of them within the polygon?
+st_touches(point_sf, polygon_sfc) # do any points touch the polygon?
+st_disjoint(point_sf, polygon_sfc) # are any of the points exist outside poly?
+st_is_within_distance(point_sf, polygon_sfc, dist = 0.2) # are points w/i 0.2 unit distance of poly?
+```
+## DE-9IM Strings
+## Spatial Joining
+-   Spatial Joins use spatial predicates as keys, unlike non-spatial joins
+```{r reprex}
+set.seed(2018) # set seed for reproducibility
+(bb = st_bbox(world)) # the world's bounds
+#>   xmin   ymin   xmax   ymax 
+#> -180.0  -89.9  180.0   83.6
+random_df = data.frame(
+  x = runif(n = 10, min = bb[1], max = bb[3]),
+  y = runif(n = 10, min = bb[2], max = bb[4])
+)
+random_points = random_df |> 
+  st_as_sf(coords = c("x", "y"), crs = "EPSG:4326") # set coordinates and CRS
+
+world_random = world[random_points, ]
+nrow(world_random)
+#> [1] 4
+random_joined = st_join(random_points, world["name_long"])
+```
+
+```{r}
+tmap::qtm(random_points)
+tmap::qtm(world_random)
+tmap::qtm(random_joined)
+```
+
