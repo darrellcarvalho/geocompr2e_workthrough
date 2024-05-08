@@ -20,7 +20,11 @@ The authors demonstrate loading libraries using the `library()` function, but I 
 knitr::opts_chunk$set(echo = TRUE)
 # install.packages("remotes")
 # remotes::install_github("geocompr/geocompkg")
-pacman::p_load(sf, terra, spData, spDataLarge)
+# pacman::p_load(sf, terra, spData, spDataLarge)
+library(sf)
+library(terra)
+library(spData)
+library(spDataLarge)
 ```
 
 ------------------------------------------------------------------------
@@ -140,13 +144,17 @@ Author-listed reasons for sf:
 
 -   tidyverse compatibility
 
--   ease to convert between sf and sp if needed:
+Below we demonstrate use of: 
+* `st_read()` which gives verbose messaging and defaults to a dataframe
+* `read_sf()` which is silent and returns a tidyverse tibble
 
-```{r sf-sp}
-library(sp)
-world_sp <- as(world, "Spatial") # sf to sp
+```{r sf-tidyverse-compatibility}
+world_dfr <- st_read(system.file("shapes/world.shp", package = "spData"))
 
-world_sf <- st_as_sf(world_sp) # sp to sf
+world_tbl <- read_sf(system.file("shapes/world.shp", package = "spData"))
+
+class(world_dfr)
+class(world_tbl)
 ```
 
 ## Basic map making
@@ -187,6 +195,26 @@ plot(world["continent"], reset = FALSE)
 cex = sqrt(world$pop) / 10000
 world_cents = st_centroid(world, of_largest = TRUE)
 plot(st_geometry(world_cents), add = TRUE, cex = cex)
+```
+```{r}
+world_asia <- world[world$continent == "Asia",]
+asia <- st_union(world_asia)
+india <- world[world$name_long == "India",] # subsets to only India
+india |>
+  st_geometry() |>
+  plot(main = "India in Context",
+       expandBB = c(0,1.6,1,0), # expand BB at left and top
+       col = "#FF7722", # Indian Safron
+       lwd = 2)
+plot(world_asia[0], add = TRUE) # plots Asia underneath
+
+name <- world[world$name_long == "India", ] # gets name data
+namecenter <- st_centroid(name) # assigns the polygon centroid to the name
+namecenter_coord <- st_coordinates(namecenter) # gets the centroid coordinates
+text(x = namecenter_coord[, 1],
+     y = namecenter_coord[, 2],
+     labels = name$name_long,
+     cex = 1.2) # plots the name annotation on the map
 ```
 
 ## Geometry types
