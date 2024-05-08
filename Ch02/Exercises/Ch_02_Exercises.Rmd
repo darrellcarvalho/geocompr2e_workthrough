@@ -11,7 +11,10 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-pacman::p_load(sf, spData, spDataLarge, terra)
+library(sf)
+library(spData)
+library(spDataLarge)
+library(terra)
 ```
 
 # Ch. 2 Exercises
