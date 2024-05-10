@@ -16,7 +16,10 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 # install.packages("remotes")
 # remotes::install_github("geocompx/geocompkg")
-pacman::p_load(sf, terra, spData, dplyr)
+library(sf)
+library(terra)
+library(spData)
+library(dplyr)
 elev = rast(system.file("raster/elev.tif", package = "spData"))
 grain = rast(system.file("raster/grain.tif", package = "spData"))
 ```
@@ -46,24 +49,29 @@ grain = rast(system.file("raster/grain.tif", package = "spData"))
             -   **y** is the 'subsetting object'
             -   `op = st_intersects` is an optional topological argument
     -   Demonstration of spatial subsetting using `nz` and `nz_height`
+
 ```{r canterbury-object}
 canterbury <- nz |> filter(Name == "Canterbury")
 canterbury_height <- nz_height[canterbury, ]
 # nz_height[canterbury, , op = st_disjoint] %>% plot()
 ```
+
 -   **spatial subsetting** can also be performed with **topological operators**
     -   the code chunk below returns a **sparse geometry binary predicate**
         -   `sgbp` are *sparse matrices*, lists of integer vectors with ordered, TRUE indices for each row.
         -   in other words, it does not store the entire matrix, instead storing only non-zero values and their location within a matrix, thus removing zero-values and their storage requirements.
+
 ```{r topological-operator}
 sel_sgbp <- st_intersects(nz_height, canterbury)
 sel_sgbp
 ```
     - This chunk can then be used to subset
+
 ```{r topological-operator-subsetting}
 sel_logical <- lengths(sel_sgbp) > 0
 canterbury_height2 <- nz_height[sel_logical, ]
 ```
+
 ```{r topological-operator-subetting-with-st_filter}
 canterbury_height3 <- nz_height |>
   st_filter(y = canterbury, .predicate = st_intersects)
@@ -75,6 +83,7 @@ canterbury_height3 <- nz_height |>
   -   these logic statements are made about two objects
       -   the objects are defined by ordered sets of points that define the points, lines, and polygons.
 - `sf` has 'binary predicates' - functions that test topological relations
+
 ```{r topological-relations-demo}
 # Create a polygon
 polygon_matrix <- cbind(
@@ -108,6 +117,7 @@ st_is_within_distance(point_sf, polygon_sfc, dist = 0.2) # are points w/i 0.2 un
 ## DE-9IM Strings
 ## Spatial Joining
 -   Spatial Joins use spatial predicates as keys, unlike non-spatial joins
+
 ```{r reprex}
 set.seed(2018) # set seed for reproducibility
 (bb = st_bbox(world)) # the world's bounds
