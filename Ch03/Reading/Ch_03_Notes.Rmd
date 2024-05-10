@@ -14,13 +14,14 @@ output:
 
 The code in the following chunk installs all the packages necessary for reproducing the book.
 
-The authors demonstrate loading libraries using the `library()` function, but I prefer using pacman's `p_load()`
-
 ```{r setup, eval = TRUE, include = TRUE}
 knitr::opts_chunk$set(echo = TRUE)
 # install.packages("remotes")
 # remotes::install_github("geocompr/geocompkg")
-pacman::p_load(sf, terra, spData, dplyr)
+library(sf) 
+library(terra) 
+library(spData) 
+library(dplyr)
 ```
 
 ------------------------------------------------------------------------
@@ -56,13 +57,13 @@ dim(world) # 2 dimensions, 177 rows, 11 columns
 
     -   useful for speeding up non-spatial data manipulation
 
-    ```{r drop-geometries}
-    world_df <- st_drop_geometry(world)
-    class(world_df) # tibble data frame
-    ncol(world_df) # 10 columns (no geometry)
-    ```
+```{r drop-geometries}
+world_df <- st_drop_geometry(world)
+class(world_df) # tibble data frame
+ncol(world_df) # 10 columns (no geometry)
+```
 
-    ## Vector attribute subsetting
+## Vector attribute subsetting
 
 -   subset with brackets `[]` or base function`subset()`
 
@@ -71,14 +72,15 @@ dim(world) # 2 dimensions, 177 rows, 11 columns
 
             -   leaving one or other blank returns all rows or all columns
 
-            ```{r base-subsetting, echo=TRUE, message=TRUE, paged.print=TRUE}
-            world[1:6, ] # rows 1:6, all columns
-            world[, 1:3] # columns 1:3, all rows, + geometry column because 'sticky' sf
-            world[1:6, 1:3] # rows 1:6, columns 1:3 + geometry
-            world[,c("name_long", "pop")] # return columns by name, + geometry
-            world[, c(T,T,F,F,F,F,F,T,T,F,F)] # logic-based subsetting of columns
-            # world[, 888] throws an error because the column doesn't exist
-            ```
+```{r base-subsetting, echo=TRUE, message=TRUE, paged.print=TRUE}
+
+world[1:6, ] # rows 1:6, all columns
+world[, 1:3] # columns 1:3, all rows, + geometry column because 'sticky' sf
+world[1:6, 1:3] # rows 1:6, columns 1:3 + geometry
+world[,c("name_long", "pop")] # return columns by name, + geometry
+world[, c(T,T,F,F,F,F,F,T,T,F,F)] # logic-based subsetting of columns
+# world[, 888] throws an error because the column doesn't exist
+```
 
 **The following code demonstrates usefulness of logical subsetting**
 
@@ -94,23 +96,23 @@ small_countries <- subset(world, area_km2 < 10000)
     -   `dplyr::select()` for columns
     -   both are non-destructive to spatial components
 
-    ```{r dplyr-select}
-    world1 <- dplyr::select(world, name_long, pop) # select name_long and pop cols
-    names(world1)
+```{r dplyr-select}
+world1 <- dplyr::select(world, name_long, pop) # select name_long and pop cols
+names(world1)
 
-    world2 <- dplyr::select(world, name_long:pop) # all columns between name_long and pop (inclusive)
-    names(world2)
+world2 <- dplyr::select(world, name_long:pop) # all columns between name_long and pop (inclusive)
+names(world2)
 
-    world3 <- dplyr::select(world, -subregion, -area_km2) # all columns except subregion and area_km2 (inclusive)
-    names(world3)
+world3 <- dplyr::select(world, -subregion, -area_km2) # all columns except subregion and area_km2 (inclusive)
+names(world3)
 
-    world4 <- dplyr::select(world, name_long, population = pop) # renaming a column through selection
-    names(world4)
+world4 <- dplyr::select(world, name_long, population = pop) # renaming a column through selection
+names(world4)
 
-    world5 <- world[, c("name_long", "pop")] # subset columns by name
-    names(world5)[names(world5) == "pop"] = "population" # rename column manually via base R
-    names(world5)
-    ```
+world5 <- world[, c("name_long", "pop")] # subset columns by name
+names(world5)[names(world5) == "pop"] = "population" # rename column manually via base R
+names(world5)
+```
 
 -   columns can be returned as vectors via `pull()` and `dataset$column` or `dataset[["column"]]` syntaxes
 
@@ -278,10 +280,10 @@ world_new$pop_dens <- world_new$pop / world_new$area_km2
     -   `mutate()` adds new columns at the end
     -   `transmute()` drops non-specified columns
 
-    ```{r using-mutate}
-    world %>% 
-      mutate(pop_dens = pop / area_km2)
-    ```
+```{r using-mutate}
+world %>% 
+  mutate(pop_dens = pop / area_km2)
+```
 
 ```{r using-transmute}
 world %>% 
@@ -341,23 +343,23 @@ class(world_data)
     -   `xmin`, `xmax`, `ymin`, `ymax` set extents
     -   `vals` sets raster values
 
-    ```{r raster-setup}
-    # This is to set up the raster data used for the remainder of the section
-    elev <- rast(nrows = 6, ncols = 6, # number of rows and columns
-                #resolution = 0.5, 
-                xmin = -1.5, xmax = 1.5, # x extent
-                ymin = -1.5, ymax = 1.5, # y extent
-                vals = 1:36) # raster values
+```{r raster-setup}
+# This is to set up the raster data used for the remainder of the section
+elev <- rast(nrows = 6, ncols = 6, # number of rows and columns
+            #resolution = 0.5, 
+            xmin = -1.5, xmax = 1.5, # x extent
+            ymin = -1.5, ymax = 1.5, # y extent
+            vals = 1:36) # raster values
 
-    grain_order <- c("clay", "silt", "sand")
-    grain_char <- sample(grain_order, 36, replace = TRUE)
-    grain_fact <- factor(grain_char, levels = grain_order)
-    grain <- rast(nrows = 6, ncols = 6, 
-                  resolution = 0.5, 
-                  xmin = -1.5, xmax = 1.5, 
-                  ymin = -1.5, ymax = 1.5,
-                  vals = grain_fact)
-    ```
+grain_order <- c("clay", "silt", "sand")
+grain_char <- sample(grain_order, 36, replace = TRUE)
+grain_fact <- factor(grain_char, levels = grain_order)
+grain <- rast(nrows = 6, ncols = 6, 
+              resolution = 0.5, 
+              xmin = -1.5, xmax = 1.5, 
+              ymin = -1.5, ymax = 1.5,
+              vals = grain_fact)
+```
 
 -   Raster Attribute Table (RAT) stored as a list of data frames
 
@@ -366,13 +368,13 @@ class(world_data)
     -   categorical rasters store a color table, viewable in *terra* with `coltab()`
     -   this info can be saved to GeoTIFF
 
-    ```{r cats-levels}
-    cats(grain)
+```{r cats-levels}
+cats(grain)
 
-    levels(grain) <- data.frame(value = c(0, 1, 2),
-                                wetness = c("wet", "moist", "dry"))
-    levels(grain)
-    ```
+levels(grain) <- data.frame(value = c(0, 1, 2),
+                            wetness = c("wet", "moist", "dry"))
+levels(grain)
+```
 
     ## Raster subsetting
 
@@ -380,10 +382,10 @@ class(world_data)
 
     -   this syntax accepts Row,Column indexing; Cell ID; Coordinates; another spatial object
 
-    ```{r non-spatial-raster-subset}
-    elev[1, 1] # row 1, column 1
-    elev[1] # Cell ID 1
-    ```
+```{r non-spatial-raster-subset}
+elev[1, 1] # row 1, column 1
+elev[1] # Cell ID 1
+```
 
 -   Subset multi-layered objects with bracket notation returns cell values for each layer.
 
@@ -419,15 +421,15 @@ two_layers[]
     -   for categoricals, it returns the numbers of cells in each category
     -   `global()` provides computation of other summary stats
 
-    ```{r raster-summary}
-    elev            # return description of elev
-    summary(elev)   # summary stats of elev
-    global(elev, sd)# standard deviation of elev
-    hist(elev)      # histogram of elev
-    boxplot(elev)   # boxplot of elev
-    density(elev)   # plot probability density of elev
+```{r raster-summary}
+elev            # return description of elev
+summary(elev)   # summary stats of elev
+global(elev, sd)# standard deviation of elev
+hist(elev)      # histogram of elev
+boxplot(elev)   # boxplot of elev
+density(elev)   # plot probability density of elev
 
-    grain           # return description of grain
-    summary(grain)  # summary stats of grain
-    freq(grain)     # frequency tables for grain
-    ```
+grain           # return description of grain
+summary(grain)  # summary stats of grain
+freq(grain)     # frequency tables for grain
+```

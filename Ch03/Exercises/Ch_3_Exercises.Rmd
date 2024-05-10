@@ -17,7 +17,11 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 # install.packages("remotes")
 # remotes::install_github("geocompx/geocompkg")
-pacman::p_load(sf, terra, spData, dplyr,tmap)
+library(sf) 
+library(terra) 
+library(spData)
+library(dplyr)
+library(tmap)
 data(us_states)
 data(us_states_df)
 ```
@@ -26,7 +30,7 @@ data(us_states_df)
 
 Create a new object called `us_states_name` that contains only the
 `NAME` column from the `us_states` object using either base R (`[`) or
-tidyverse(`select()`) syntax. What is the cost of the new object and
+tidyverse(`select()`) syntax. What is the class of the new object and
 what makes it geographic?
 
 ```{r}
@@ -154,7 +158,7 @@ How much has population density changed between 2010 and 2015 in each state? Cal
 ```{r}
 us_states_dens %>%
   mutate(pop_dens_change = ((pop_dens_15-pop_dens_10)/pop_dens_10) * 100) %>%
-  qtm(fill = "pop_dens_change")
+  qtm(fill = "pop_dens_change", midpoint = NA)
 ```
 
 # Exercise 11:
