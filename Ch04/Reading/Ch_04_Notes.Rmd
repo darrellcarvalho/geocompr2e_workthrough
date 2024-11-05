@@ -54,7 +54,6 @@ grain = rast(system.file("raster/grain.tif", package = "spData"))
 ```{r canterbury-object}
 canterbury <- nz |> filter(Name == "Canterbury")
 canterbury_height <- nz_height[canterbury, ]
-# nz_height[canterbury, , op = st_disjoint] %>% plot()
 ```
 
 -   **spatial subsetting** can also be performed with **topological operators**
@@ -128,6 +127,7 @@ st_is_within_distance(point_sf, polygon_sfc, dist = 0.2) # are points w/i 0.2 un
 
 ```{r reprex}
 set.seed(2018) # set seed for reproducibility
+data(world)
 (bb = st_bbox(world)) # the world's bounds
 #>   xmin   ymin   xmax   ymax 
 #> -180.0  -89.9  180.0   83.6
@@ -426,3 +426,94 @@ plot(zed)
 -   raster spatial clipping is equivalent to vector intersect
 
 ### Merging rasters
+
+-   often, rasters are split into more manageable 'scenes
+    -   This mean that we often need to merge adjacent rasters to operate on them simultaneously as a single study area
+-   we will download SRTM elevation data for Austria and Switzerland and merge them
+
+```{r}
+aut = geodata::elevation_30s(country = "AUT", path = tempdir())
+ch = geodata::elevation_30s(country = "CHE", path = tempdir())
+aut_ch = merge(aut, ch)
+```
+
+-   `terra::merge()` combines two images, adopting values from first raster in case of overlap
+    -   This is not optimal in most cases - when combining spectral imagery from different dates, values will likely not be comensurate
+        -   In this case, `mosaic` will likely be more useful
+        -   `mosaic` allows you to define a function for overlap, such as mean
+
+## Exercises
+
+1.  It was established in section 4.2 that Canterbury was the region of New Zealand containing most of the 101 highest points in the country. How many of these high points does the Canterbury region contain? **Bonus**: plot the result using the `plot()` function to show all of New Zealand, `canterbury` highlighted in yellow, high points in Canterbury represented by red crosses (hint: `pch = 7`) and high points in other parts of New Zealand represented by blue circles. See help page `?points` for details.
+
+    ```{r}
+    cant <- nz %>% filter(Name == 'Canterbury')
+    cant_count <- count(nz_height[cant,])
+    not_cant_count <- count(nz_height[filter(nz, Name != 'Canterbury'),])
+
+    nz_t <- st_union(nz, by_feature = FALSE)
+    plot(nz_t)
+    polys(cant, col = 'yellow')
+    points(cant_count, 
+         pch = 7,
+         col = 'red'
+         )
+    points(not_cant_count,
+         pch = 1,
+         col = "blue",
+         )
+    print(cant_count$n)
+    ```
+
+2.  Which region has the second highest number of nz_height points, and how many does it have?
+
+```{{r}}
+tab <- st_join(nz_height, nz["Name"]) %>% 
+  group_by(Name) %>%
+  count(sort = TRUE)
+tab[2,1:2]
+```
+
+3.  Generalizing the question to all regions: how many of New Zealand's 16 regions contain points which belong to the top 101 highest points in the country? Which regions? **Bonus**: create a a table listing these regions in order of number of points and their name.
+
+    ```{r}
+    tab %>% st_drop_geometry()
+    ```
+
+4.  Test your knowledge of spatial predicates by finding out and plotting how US states relate to each other and other spatial objects. The starting point of this exercise is to create an object representing Colorado state in the USA. Do this with the command `colorado = us_states[us_states$NAME == "Colorado",]` (base R) or with the `filter()` function (tidyverse) and plot the resulting object in the context of the US.
+
+```{r}
+colorado <- us_states %>% filter(NAME == "Colorado")
+plot(us_states$geometry)
+polys(colorado, col = "red")
+```
+
+```{r}
+us_states[colorado,] %>% plot()
+us_states[colorado, op = st_touches] %>% plot()
+
+```
+
+```{r warning=FALSE}
+cali <- st_centroid(us_states[us_states$NAME == "California",])
+dc <- st_centroid(us_states[us_states$NAME == "District of Columbia",])
+dc_cali <- st_union(cali, dc) %>% st_cast(to = "LINESTRING")
+plot(us_states$geometry)
+lines(dc_cali, col = "red")
+```
+
+5.  Use `dem = rast(system.file("raster/dem.tif", package = "spDataLarge"))`, and reclassify the elevation into three classes:
+
+    -   low: (\<300)
+    -   medium
+    -   high(\>500)
+
+    Secondly, read the NDVI raster (`ndvi = rast(system.file("raster/ndvi.tif", package = "spDataLarge"))`) and compute the mean NDVI and the mean elevation for each altitudinal class.
+
+6.  Apply a line detection filter to `rast(system.file("ex/logo.tif", package = "terra"))`. Plot the result. Hint: Read `?terra::focal()`.
+
+7.  Calculate the Normalized Difference Water Index (NDWI: `(green - nir) / (green + nir)`) of a Landsat image. Use the Landsat image provided by the spDataLarge package (`system.file("raster/landsat.tif", package = "spDataLarge")`). Also, calculate a correlation between NDVI and NDWI for this area (hint: you can use the `layerCor()` function).
+
+8.  A stack overflow post shows how to compute distances to the nearest coastline using `raster::distance()`. Try to do something similar but with `terra::distance()`: retrieve a digital elevation model of Spain, and compute a raster which represents distances to the coast across the country (hint: use `geodata:elevation_30s()`). Convert the resulting distances from meters to kilometers. Note: it may be wise to increase the cell size of the input raster to reduce compute time during this operation (`aggregate()`).
+
+9.  Try to modify the approach used in the above exercise by weighting the distance raster with the elevation raster; every 100 altitudinal meters should increase the distance to the coast by 10 km. Next, compute and visualize the difference between the raster created using Euclidian distance (E7) and the raster weighted by elevation.
