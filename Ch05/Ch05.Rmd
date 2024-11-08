@@ -1,0 +1,71 @@
+---
+title: "Chapter 5 Notes"
+author: "Darrell A. Carvalho"
+output:
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    theme: spacelab
+    number_sections: yes
+---
+
+# Setup
+
+```{r setup, eval = TRUE, include = TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# install.packages("remotes")
+# remotes::install_github("geocompx/geocompkg")
+library(sf)
+library(terra)
+library(spData)
+library(dplyr)
+library(spDataLarge)
+```
+
+# Introduction
+
+-   Chapter 5 focuses on geographic/geometric manipulation
+    -   5.2 covers 'unary' and 'binary' operations
+        -   'unary' - a single geometry in isolation
+        -   'binary' - modify one geometry based on another's shape
+    -   5.3 covers geometric operations on rasters
+        -   size change
+        -   resolution change
+
+# Geometric operations on vector data
+
+## Simplification
+
+-   the process of generalization of vector objects
+    -   for smaller scale maps
+    -   reduce memory, disk space, and/or bandwith consumed
+-   **sf** provides `st_simplify()` for vertex count reduction
+    -   `dTolerance` controls generalization level in map units
+
+### Simplification of a `linestring`
+
+```{r}
+seine_simp <- st_simplify(seine, 
+                          dTolerance = 2000, 
+                          preserveTopology = T) # 2000 m
+
+plot(seine)
+plot(seine_simp)
+```
+
+## Simplification of polygons
+
+```{r}
+us_states_simp1 <- st_simplify(us_states, 
+                               dTolerance = 100000, preserveTopology = T) # 100 km
+plot(us_states$geometry)
+plot(us_states_simp1$geometry)
+```
+
+```{r}
+us_states_simp2 <-  rmapshaper::ms_simplify(us_states, keep = 0.01,
+                                          keep_shapes = TRUE)
+plot(us_states$geometry)
+plot(us_states_simp2$geometry)
+```
