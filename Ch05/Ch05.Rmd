@@ -69,3 +69,252 @@ us_states_simp2 <-  rmapshaper::ms_simplify(us_states, keep = 0.01,
 plot(us_states$geometry)
 plot(us_states_simp2$geometry)
 ```
+
+```{r}
+us_states_simp3 <- smoothr::smooth(us_states, 
+                                   method = "ksmooth", 
+                                   smoothness = 6)
+
+plot(us_states_simp3$geometry)
+```
+
+## Centroids
+
+-   centroid operations identify a geographic object's central point
+    -   this center can be defined in many ways
+    -   in all cases, this reduces a geographic object to a single point feature
+-   The most common centroid operation is the *geographic centroid*
+    -   represents center of mass in an object
+    -   this is computed using `sf::st_centroid()`
+
+```{r warning=FALSE}
+nz_centroid <- st_centroid(nz)
+seine_centroid <- st_centroid(seine)
+plot(nz$geom, border = "green")
+plot(nz_centroid, add = T, col = "black")
+
+plot(seine$geometry, col = "blue")
+plot(seine_centroid, add = T, col = "black")
+```
+
+-   In objects with holes, the centroid can fall external to the object
+    -   in these instances, we can use *point on surface* operations to ensure we are getting a centroid on the object's surface
+
+```{r warning=FALSE}
+nz_pos <- st_point_on_surface(nz)
+seine_pos <- st_point_on_surface(seine)
+
+plot(seine$geometry, col = "grey")
+plot(seine_pos, add = T, col = "red")
+
+plot(nz$geom, border = "grey")
+plot(nz_pos, add = T, col = "red")
+```
+
+## Buffers
+
+-   buffers are polygons showing area-within-distance of a given geometry
+    -   buffers are useful for geographic data analysis
+        -   e.g. "how many points are within 50 km of line?"
+-   `st_buffer()` requires (at least) two arguments
+    -   input geometry
+    -   distance to compute (in units of CRS)
+
+```{r}
+seine_buff_5km <- st_buffer(seine, dist = 5000)
+seine_buff_50km <- st_buffer(seine, dist = 50000)
+
+
+plot(seine_buff_50km$geometry, col = sf.colors(3))
+plot(seine_buff_5km, add = T)
+plot(seine$geometry, add = T)
+```
+
+### Important arguments for `st_buffer()`
+
+-   `x` = the object being buffered
+-   `dist` = the distance, in CRS units, to be buffered around the object
+-   `nQuadSegs` (when GEOS in use) = number of segments per quadrant
+    -   defaults to 30; each circle is composed of 4 quadrants - 30 segments per quadrants means 120 segments per computed circle
+    -   set to `FALSE` when using `sf_use_s2()` or when using projected CRS
+-   `max_cells` (when S2 engine in use) = maximum number of cells to use to approximate a buffer
+    -   As `max_cells` increases, smoothness of buffer increases, but so does computation time
+        -   see `?s2::s2_buffer_cells` for details
+-   `endCapStyle`/`joinStyle` (when GEOS in use) = controls the appearance of the buffer's edges
+-   `singleSide` (when GEOS engine is used) = controls whether buffer is on one or both sides of input
+
+## Affine transformations
+
+-   An *affine transformation* is any transformation that preserves lines and parallelism
+    -   angles and lengths may be distorted
+    -   common affine transformations include:
+        -   shift/translation - the movement of every point by the same distance in map units
+        -   scale - enlargement or shrinkage of an object by a stable factor, either globally or locally
+            -   global scaling increases or decreases all coordinate values in relation to origin coordinates
+                -   maintains topological relations
+                -   performed by multiplication or subtraction of an `sfg` or `sfc` object
+            -   local scaling operates on geometries independently
+                -   requires points to scale geometries around, usually centroids
+    -   rotation in two-dimensional space requires a rotation matrix:
+        -   The below matrix rotates points in a clockwise direction
+
+$$R = \begin{bmatrix}
+\cos \theta & -\sin \theta \\ 
+\sin \theta & \cos \theta \\ 
+\end{bmatrix}
+$$
+
+-   **sf** performs affine transformations on objects of the `sfg` and `sfc` classes
+
+```{r}
+nz_sfc <- st_geometry(nz)
+
+# Shifting
+nz_shift = nz_sfc + c(0, 100000)
+plot(nz_sfc, main = "Shift")
+plot(nz_shift, add = T, border = "red")
+
+# Local Scaling
+nz_centroid_sfc <- st_centroid(nz_sfc)
+nz_scale <- (nz_sfc - nz_centroid_sfc) * 0.5 + nz_centroid_sfc
+plot(nz_sfc, main = "Local Scaling")
+plot(nz_scale, add = T, border = "red")
+
+# Implementing rotation matrix in r
+rotation <- function(a){
+  r = a * pi / 180 # degrees to radians
+  matrix(c(cos(r), sin(r), -sin(r), cos(r)), nrow = 2, ncol = 2)
+}
+# our rotation function accepts one argument - rotation angle in degrees
+
+# Rotation
+nz_rotate <- (nz_sfc - nz_centroid_sfc) * rotation(30) + nz_centroid_sfc
+
+plot(nz_sfc, border = "black", main = "Rotation")
+plot(nz_rotate, border = "red", add = T)
+```
+
+-   these newly generated geometries can replace the previous ones via `st_set_geometry`
+
+```{r}
+nz_scale_sf <- st_set_geometry(nz, nz_scale)
+plot(nz_scale_sf)
+```
+
+## Clipping
+
+-   Spatial clipping is spatial subsetting involving changes to `geometry` columns
+    -   only geometries more complex than points can be clipped
+
+```{r}
+b <- st_sfc(st_point(c(0,1)), st_point(c(1,1))) # create two points
+b = st_buffer(b, dist = 1) # create circles from the points
+plot(b, border = "gray")
+text(x = c(-0.5, 1.5), y = 1, labels = c("x", "y"), cex = 3) # add text
+```
+
+```{r}
+# clipping to intersect
+x <- b[1]
+y <- b[2]
+x_and_y <- st_intersection(x, y)
+plot(b, border = "gray")
+plot(x_and_y, col = "lightgray", border = "gray", add = TRUE) # intersecting area
+
+# clipping to only area in X but not Y
+x_not_y <- st_difference(x, y)
+plot(b, border = "gray")
+plot(x_not_y, col = "lightgray", border = "gray", add = TRUE)
+
+# clipping to only area in Y but not X
+y_not_x <- st_difference(y, x)
+plot(b, border = "gray")
+plot(y_not_x, col = "lightgray", border = "gray", add = TRUE)
+
+# merging x and y
+x_union_y <- st_union(x, y)
+plot(b, border = "gray")
+plot(x_union_y, col = "lightgray", border = "gray", add = TRUE)
+
+# clipping to include x and y but not the intersection of x and y
+x_y <- st_sym_difference(x, y)
+plot(b, border = "gray")
+plot(x_y, col = "lightgray", border = "gray", add = TRUE)
+```
+
+## Subsetting and clipping
+
+-   Clipping may change geometries but may also subset objects returning only features that intersect with a subsetting object
+
+```{r}
+# create a bounding box around the union of x and y
+bb <- st_bbox(st_union(x, y))
+box <- st_as_sfc(bb)
+
+# set seed
+set.seed(2024)
+
+# select 10 random points from within the bounding box
+p <- st_sample(x = box, size = 10)
+# use bracket subsetting to select only the point(s) within the intersection of x and y
+p_xy1 <- p[x_and_y]
+
+# plot it all out
+plot(box, border = "gray", lty = 2)
+plot(x, add = T, border = "gray")
+plot(y, add = TRUE, border = "gray")
+plot(p, add = TRUE, cex = 3.5)
+plot(p_xy1, cex = 5, col = "red", add = T)
+text(x = c(-0.5, 1.5), y = 1, labels = c("x", "y"), cex = 3)
+```
+
+-   We can perform similar results using the code chunks below
+    -   as above, `p_xy1` is using an intermediate option and brackets to find a subset
+    -   `p_xy2` uses `st_intersection` to find the intersection between the points and our `x_and_y` object
+        -   This will return features that partially intersect, but modifies their geometries where they cross the borders
+    -   `p_xy3` uses the binary predicate `st_intersects()` to create a subsetting object which is then passed to bracketing
+
+```{r}
+# create a bounding box around the union of x and y
+bb <- st_bbox(st_union(x, y))
+box <- st_as_sfc(bb)
+
+# set seed
+set.seed(2024)
+
+# select 10 random points from within the bounding box
+p <- st_sample(x = box, size = 10)
+
+# way 1
+p_xy1 <- p[x_and_y]
+
+# way 2
+p_xy2 <- st_intersection(p, x_and_y)
+
+# way 3
+sel_p_xy <- st_intersects(p, x, sparse = FALSE)[, 1] &
+  st_intersects(p, y, sparse = FALSE) [, 1]
+p_xy3 <- p[sel_p_xy]
+
+View(p_xy1)
+View(p_xy2)
+View(p_xy3)
+```
+
+-   all of the above approaches create effectively identical results
+    -   unless other factors intervene, prefer the simplest/most concise implementation
+
+## Geometry Unions
+
+-   spatial aggregation can silently dissolve geometries of touching polygons with same grouping
+
+```{r}
+regions <- aggregate(x = us_states[, "total_pop_15"], 
+                     by = list(us_states$REGION),
+                     FUN = sum, na.rm = TRUE)
+regions <- us_states %>% 
+  group_by(REGION) %>% 
+  summarize(pop = sum(total_pop_15, na.rm = TRUE))
+library(tmap)
+qtm(regions, fill = "pop")
+```
