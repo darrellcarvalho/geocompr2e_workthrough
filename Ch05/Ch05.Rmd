@@ -312,7 +312,11 @@ regions <- aggregate(x = us_states[, "total_pop_15"],
 regions <- us_states %>% 
   group_by(REGION) %>% 
   summarize(pop = sum(total_pop_15, na.rm = TRUE))
-qtm(regions, fill = "pop")
+palette = c("lightblue", "blue4")
+qtm(regions, fill = "pop", 
+    fill.scale = tm_scale_intervals(n = 4,
+                                    style = "equal",
+                                    values = rev(palette)))
 ```
 
 -   Under the hood, R uses `aggregate()` and `summarize()` to combine the geometries
@@ -365,4 +369,152 @@ all.equal(multipoint, multipoint_3)
     -   when casting from multi-types to non-multi-types, only the first element remains
 -   casting on `sfc` objects and `sf` objects work similarly, with some caveats
     -   conversion between multi-types and non-multi-types result into many non-multi-objects
--   
+
+```{r}
+multilinestring_list <- list(matrix(c(1, 4, 5, 3), ncol = 2),
+                       matrix(c(4, 4, 4, 1), ncol = 2),
+                       matrix(c(2, 4, 2, 2), ncol = 2))
+
+multilinestring <- st_multilinestring(multilinestring_list)
+multilinestring_sf <- st_sf(geom = st_sfc(multilinestring))
+multilinestring_sf
+multilinestring_sf %>% plot()
+```
+
+-   imagine the above is a road network
+    -   it is a single row that defines all lines
+        -   you are unable to name each linestring by street name
+        -   you are unable to calculate the length of a given segment
+    -   we can use `st_cast()` to separate the multilinestring into three linestrings
+
+```{r}
+linestring_sf2 <- st_cast(multilinestring_sf, "LINESTRING")
+linestring_sf2
+```
+
+-   With this newly created object, we can now create attributes and measurements for the segments
+
+```{r}
+linestring_sf2$name = c("Riddle Rd", "Marshall Ave", "Foulke St")
+linestring_sf2$length = st_length(linestring_sf2)
+linestring_sf2
+```
+
+# Geometric operations on raster data
+
+-   The following are all geometric operations which are useful with raster data:
+    -   shifting
+    -   flipping
+    -   mirroring
+    -   scaling
+    -   rotation
+    -   warping
+-   all of these operations contribute to vital tasks like georeferencing - the overlaying of rasters on maps with a known, often different, CRS
+-   Georeferencing techniques include
+    -   georectification using ground control points
+    -   orthorectification, including local topography
+    -   image registration (combining images of the same object from different sensors via image alignment)
+-   R is not conducive to geo- or orthorectification
+-   R is excellent for image registration
+
+## Geometric intersections
+
+-   subsetting a raster and retrieving its spatial output is similar to value-extraction in R
+    -   the key difference is that we must use `drop = FALSE` to get our raster object
+
+```{r}
+elev <- rast(system.file("raster/elev.tif", package = "spData"))
+clip <- rast(xmin = -0.5, xmax = 0.5, ymin = -0.5, ymax = 0.5,
+             resolution = 0.3, vals = rep(1, 9))
+elev %>% plot()
+clip %>% plot()
+elev[clip, drop = FALSE] %>% plot()
+```
+
+-   we could get the same result `crop()`
+
+```{r}
+elev <- rast(system.file("raster/elev.tif", package = "spData"))
+clip <- rast(xmin = -0.5, xmax = 0.5, ymin = -0.5, ymax = 0.5,
+             resolution = 0.3, vals = rep(1, 9))
+elev %>% plot()
+clip %>% plot()
+elev[clip, drop = FALSE] %>% plot()
+crop(elev, clip) %>% plot()
+```
+
+## Extent and Origin
+
+-   map algebra requires that resolution, projection, origin and/or extent match between rasters
+    -   We can adjust mismatches through alignment
+    -   in the simplest case, images differ by extent.
+        -   In such cases, the extent of one image can be made to match the other by adding null pixels around the raster such that their extent maches
+        -   in **terra** this can be done using `extend()`
+
+```{r}
+elev <- rast(system.file('raster/elev.tif', package = 'spData'))
+elev_2 <- extend(elev, c(1, 2))
+
+elev_4 <- extend(elev, elev_2)
+```
+
+-   The origin (cell corner closest to coordinates (0, 0)) of a raster can be checked or changed using `origin()`
+
+```{r}
+origin(elev_4)
+elev_4 %>% plot()
+origin(elev_4) <- c(0.25, 0.25)
+elev_4 %>% plot(add = T)
+```
+
+## Aggregation and Disaggregation
+
+-   decreasing a raster's resolution is done via `aggregate()`
+    -   when aggregating, a function is supplied to determine how to compute aggregated cells
+-   increasing a raster's resolution is done via `disagg()`
+    -   there are two methods included in `disagg()`
+        -   `"near"` gives output cells the value of the input cells, duplicating values
+        -   `"bilinear"` uses the four nearest pixel centers of input to compute average (weighted by distance) for output
+        -   Note that disaggregation does not reverse aggregation; the values are only as good as their lowest resolution source.
+
+```{r}
+dem <- rast(system.file("raster/dem.tif", package = "spDataLarge"))
+dem_agg <- aggregate(dem, fact = 5, fun = mean)
+dem_agg2 <- aggregate(dem, fact = 5, fun = median)
+plot(dem)
+plot(dem_agg)
+plot(dem_agg2)
+```
+
+```{r}
+dem_disagg <- disagg(dem_agg, fact = 5, method = "bilinear")
+identical(dem, dem_disagg) # the dem and the disaggregated dem_agg are not identical
+plot(dem_agg)
+plot(dem)
+plot(dem_disagg)
+```
+
+## Resampling
+
+-   when we have two or more rasters with differing resolution ans origins, **resampling** comes into play
+    -   **resampling**: the process of computing values for new pixel locations
+        -   we take values of an original raster and recalculate new values for a target raster with custom resolution and origin
+    -   There are many resampling methods:
+        -   Nearest neighbor - assign the value of the nearest cell of the original raster to the new /target cell
+        -   Bilinear interpolation - assign weighted average of four nearest cells from original to new/target
+        -   Cubic interpolation - uses values of the 16 nearest cells of original to new/target, using third-order polynomials
+            -   Cubic spline interpolation - also uses 16 values, but uses cubic splines (piece-wise third-order
+        -   Lanczos windowed sinc resampling: uses 36 nearest cells to determine new/target cell value
+    -   We will use `terra::resample()` for our purposes
+        -   `resample` accepts an input raster (`x`), target spatial properties (`y`), and a `method`
+
+```{r}
+# Create a sample raster to demonstrate on
+target_rast <- rast(xmin = 794650, xmax = 798250,
+                    ymin = 8931750, ymax = 8935350,
+                    resolution = 300, crs = "EPSG:32717")
+
+dem_resample  <-  resample(dem, y = target_rast, method = "cubicspline")
+plot(dem)
+plot(dem_resample)
+```
