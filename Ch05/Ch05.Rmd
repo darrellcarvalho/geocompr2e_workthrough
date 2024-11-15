@@ -50,7 +50,6 @@ library(tmap)
 seine_simp <- st_simplify(seine, 
                           dTolerance = 2000, 
                           preserveTopology = T) # 2000 m
-
 plot(seine)
 plot(seine_simp)
 ```
@@ -517,4 +516,25 @@ target_rast <- rast(xmin = 794650, xmax = 798250,
 dem_resample  <-  resample(dem, y = target_rast, method = "cubicspline")
 plot(dem)
 plot(dem_resample)
+```
+
+# Exercises
+
+E1. Generate and plot simplified versions of the `nz` dataset. Experiment with different values of `keep` (ranging from 0.5 to 0.00005) for `ms_simplify()` and `dTolerance` (from 100 to 100,000) for `st_simplify()`.
+
+```{r}
+nz$geom %>% rmapshaper::ms_simplify(keep = 0.05) %>% plot()
+
+nz$geom %>% st_simplify(dTolerance = 10000) %>% plot()
+```
+
+E2. In the first exercise in Chapter Spatial Data Operations, it was established that Canterbury region had 70 of the 101 highest points in New Zealand. Using `st_buffer()`, how many points in `nz_height` are within 100 km of Canterbury?
+
+```{r}
+cant_buff <- nz[nz$Name == "Canterbury",] %>% st_buffer(100000)
+cant_buff$geom %>% plot(col = "grey")
+nz$geom %>% plot(col = "white" ,add = T)
+nz[nz$Name == "Canterbury",]$geom %>% plot(col = "green", add = T)
+nz_height$geometry[cant_buff] %>% plot(add = T)
+nz_height$geometry[cant_buff] %>% mapview::npts()
 ```
