@@ -538,3 +538,161 @@ nz[nz$Name == "Canterbury",]$geom %>% plot(col = "green", add = T)
 nz_height$geometry[cant_buff] %>% plot(add = T)
 nz_height$geometry[cant_buff] %>% mapview::npts()
 ```
+
+E3. Find the geographic centroid of New Zealand. How far is it from the geographic centroid of Canterbury?
+
+```{r}
+nz_cent <- nz$geom %>% st_union() %>% st_centroid()
+cant_cent <- nz[nz$Name == "Canterbury",]$geom %>% st_centroid()
+
+dist_line <- st_union(nz_cent, cant_cent, by_feature = TRUE) %>% st_cast("LINESTRING")
+
+nz$geom %>% st_union %>% plot()
+dist_line %>% plot(add = T, col = "grey")
+cant_cent %>% plot(add = T, col = "blue")
+nz_cent %>% plot(add = T, col = "red")
+st_distance(nz_cent, cant_cent) %>% units::set_units("km")
+st_length(dist_line) %>% units::set_units("km")
+```
+
+E4. Most world maps have a north-up orientation. A world map with a south-up orientation could be created by a reflection of the `world` object geometry. Write code to do so. Hint: you can use the `rotation()` function from this chapter for this transformation.
+
+```{r}
+rotation <- function(a){
+  r = a * pi / 180 # degrees to radians
+  matrix(c(cos(r), sin(r), -sin(r), cos(r)), nrow = 2, ncol = 2)
+}
+world_sfc <- st_geometry(world)
+world_rotate <- world_sfc * rotation(180)
+world_rotate <- st_set_geometry(world, world_rotate)
+world_rotate %>% plot()
+```
+
+Bonus: create an upside down map of your country.
+
+```{r}
+rotation <- function(a){
+  r = a * pi / 180 # degrees to radians
+  matrix(c(cos(r), sin(r), -sin(r), cos(r)), nrow = 2, ncol = 2)
+}
+us <- world[world$name_long == "United States",]
+us_sfc <- st_geometry(us)
+us_rotate <- us_sfc * rotation(180)
+us_rotate <- st_set_geometry(us, us_rotate)
+us_rotate %>% plot()
+```
+
+E5. Run the code in Section 5.2.6. With reference to the objects created in that section, subset the point in `p` that is contained within `x` AND `y`.
+
+```{r}
+b <- st_sfc(st_point(c(0,1)), st_point(c(1,1))) # create two points
+b = st_buffer(b, dist = 1) # create circles from the points
+plot(b, border = "gray")
+text(x = c(-0.5, 1.5), y = 1, labels = c("x", "y"), cex = 3) # add text
+
+# clipping to intersect
+x <- b[1]
+y <- b[2]
+
+# set seed
+set.seed(2024)
+
+# select 10 random points from within the bounding box
+p <- st_sample(x = box, size = 10)
+
+# using bracket/base subsetting
+p_in_y <- p[y]
+p_in_xy <- p_in_y[x]
+
+# using st_intersection() to create an intermediate object
+x_and_y <- st_intersection(x, y)
+p_in_x_and_y <- p[x_and_y]
+
+# Plot to view
+plot(box, border = "gray", lty = 2)
+plot(x, add = T, border = "gray")
+plot(y, add = TRUE, border = "gray")
+plot(p, add = TRUE, cex = 3.5)
+plot(p_in_x_and_y, cex = 5, col = "red", add = T)
+text(x = c(-0.5, 1.5), y = 1, labels = c("x", "y"), cex = 3)
+
+identical(p_in_xy, p_in_x_and_y)
+```
+
+-   using base subsetting operators
+
+```{r}
+# using bracket/base subsetting
+p_in_y <- p[y]
+p_in_xy <- p_in_y[x]
+# Plot to view
+plot(box, border = "gray", lty = 2)
+plot(x, add = T, border = "gray")
+plot(y, add = TRUE, border = "gray")
+plot(p, add = TRUE, cex = 3.5)
+plot(p_in_xy, cex = 5, col = "red", add = T)
+text(x = c(-0.5, 1.5), y = 1, labels = c("x", "y"), cex = 3)
+
+```
+
+-   Using an intermediary object created with the `st_intersection()`
+
+```{r}
+x_and_y <- st_intersection(x, y)
+p_in_x_and_y <- p[x_and_y]
+plot(box, border = "gray", lty = 2)
+plot(x, add = T, border = "gray")
+plot(y, add = TRUE, border = "gray")
+plot(p, add = TRUE, cex = 3.5)
+plot(p_in_x_and_y, cex = 5, col = "red", add = T)
+text(x = c(-0.5, 1.5), y = 1, labels = c("x", "y"), cex = 3)
+```
+
+-   Let's see if they're identical
+
+```{r}
+identical(p_in_xy, p_in_x_and_y)
+```
+
+E6: Calculate the length of the boundary lines of US states in meters. Which state has the longest border and which has the shortest?
+
+```{r}
+us_states9311 <- st_transform(us_states, "EPSG:9311")
+us_states_bor <- st_cast(us_states9311, "MULTILINESTRING")
+us_states_bor$borders <- st_length(us_states_bor)
+us_states_bor %>% select(NAME, borders) %>% arrange(borders) %>% slice(-(2:(n()-1)))
+```
+
+E7 Read the srtm.tif file into R. This raster has a resolution of 0.00083 \* 0.00083 degrees. Change its resolution to 0.01 \* 0.01 degrees using all the methods available in terra package. Visualize the results. Can you notice any differences between the results of these resampling methods?
+
+```{r}
+srtm <- rast(system.file("raster/srtm.tif", package = "spDataLarge"))
+target_rast <- rast(xmin = -113.2396, xmax = -112.8521,
+                    ymin = 37.13208, ymax = 37.51292,
+   
+                 resolution = 0.01, crs = "EPSG:4326")
+```
+
+```{r}
+# Original
+srtm %>% plot(main = "Original")
+
+# Nearest Neighbor
+nearneigh <- resample(srtm, target_rast, "near")
+nearneigh %>% plot(main = "Nearest Neighbor")
+
+# Bilinear
+bilin <- resample(srtm, target_rast, "bilinear")
+bilin %>% plot(main = "Bilinear Interpolation")
+# Cubic
+cubic <- resample(srtm, target_rast, "cubic")
+cubic %>% plot(main = "Cubic Interpolation")
+
+# Cubic Spline
+cspline <- resample(srtm, target_rast, "cubicspline")
+cspline %>% plot(main = "Cubic B-spline Interpolation")
+
+# Lanczos Windowed Sinc Resampling
+lanczo <- resample(srtm, target_rast, "lanczos")
+lanczo %>% plot(main = "Lanczos Windowed Resampling")
+```
