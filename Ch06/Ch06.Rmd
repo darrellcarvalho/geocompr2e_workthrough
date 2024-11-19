@@ -1,0 +1,24 @@
+---
+title: "Chapter 6 Notes"
+author: "Darrell A. Carvalho"
+output:
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    theme: spacelab
+    number_sections: yes
+---
+
+# Setup
+
+```{r setup, eval = TRUE, include = TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# install.packages("remotes")
+# remotes::install_github("geocompx/geocompkg")
+library(sf)
+library(terra)
+library(dplyr)
+```
+
+# Introduction
