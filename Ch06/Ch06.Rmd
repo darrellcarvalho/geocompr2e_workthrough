@@ -22,3 +22,60 @@ library(dplyr)
 ```
 
 # Introduction
+
+-   This chapter covers raster-vector interactions.
+    -   The first section covers raster cropping and masking
+    -   The second section covers extraction of raster values via vectors
+    -   The third and fourth sections cover converting between raster and vector \# Raster Cropping
+
+# Raster Cropping
+
+-   **cropping** reduces the extent of a raster object
+-   **masking** sets values outside of a given object/boundary to `NA`
+
+```{r data-import}
+srtm <- rast(system.file("raster/srtm.tif", package = "spDataLarge"))
+zion <- read_sf(system.file("vector/zion.gpkg", package = "spDataLarge"))
+zion <- st_transform(zion, st_crs(srtm))
+```
+
+```{r crop}
+srtm_cropped <- crop(srtm, zion)
+plot(srtm_cropped)
+```
+
+```{r mask}
+srtm_masked <- mask(srtm, zion)
+plot(srtm_masked)
+```
+
+-   Often, we wish to both crop and mask, to reduce memory usage and bring a study area into focus
+
+```{r}
+srtm_cropped <- crop(srtm, zion)
+srtm_final <- mask(srtm_cropped, zion)
+plot(srtm_final)
+```
+
+-   `mask()` has settings that allow the production of different results
+    -   `inverse = TRUE` will invert the masking operation, masking pixels within the mask polygon
+    -   `updatevalue = 0` will use 0 as the replacement value, rather than `NA`
+
+```{r inverted-mask}
+srtm_inv_masked <- mask(srtm, zion, inverse = TRUE)
+plot(srtm_masked)
+plot(srtm_inv_masked)
+```
+
+# Raster extraction
+
+-   in raster extraction, we identify and return values from a 'target' raster based on 'selector' object(s).
+    -   Below, we use `zion_points` to extract elevation from `srtm` raster
+    -   we then use `cbind` to bind the elevation values to the `zion_points` geometry, using the matching `ID` column
+        -   `cbind` stands for columnar bind
+
+```{r}
+data("zion_points", package = "spDataLarge")
+elevation <- terra::extract(srtm, zion_points)
+zion_points <- cbind(zion_points, elevation)
+```
