@@ -67,7 +67,9 @@ plot(srtm_masked)
 plot(srtm_inv_masked)
 ```
 
-# Raster extraction
+# Raster Extraction
+
+## Point Extraction
 
 -   in raster extraction, we identify and return values from a 'target' raster based on 'selector' object(s).
     -   Below, we use `zion_points` to extract elevation from `srtm` raster
@@ -77,5 +79,158 @@ plot(srtm_inv_masked)
 ```{r}
 data("zion_points", package = "spDataLarge")
 elevation <- terra::extract(srtm, zion_points)
-zion_points <- cbind(zion_points, elevation)
+zion_points <- cbind(zion_points, elevation) %>% select(-ID)
+
+plot(srtm)
+plot(zion_points, pch = 16, add = T)
 ```
+
+## Linear Extraction (Transect via points)
+
+-   we can also use lines as selectors for extraction
+    -   this is not recommended for transect approaches due to measurement challenges
+    -   instead, best practice currently is to split the line into points, and extract values along points.
+
+```{r line}
+zion_transect <- cbind(c(-113.2, -112.9), c(37.45, 37.2)) %>% 
+  st_linestring() %>% 
+  st_sfc(crs = crs(srtm)) %>% 
+  st_sf(geometry = .)
+
+srtm %>% plot()
+zion_transect %>% plot(add = T)
+```
+
+-   Above, we have generated a transect line.
+-   Next we will give a unique id to the transect
+-   Then, we segmentize the line to a set density
+-   finally, we cast the segments to point.
+
+```{r}
+# give unique ID
+zion_transect$id <- 1:nrow(zion_transect)
+
+# segmentize
+zion_transect <- st_segmentize(zion_transect, dfMaxLength = 250)
+
+# cast to point
+zion_transect <- st_cast(zion_transect, "POINT")
+
+zion_transect
+```
+
+-   Now we can determine the distance between points
+
+```{r}
+zion_transect <- zion_transect %>% 
+  group_by(id) %>% 
+  mutate(dist = st_distance(geometry)[, 1])
+```
+
+-   Finally, we can extract elevation values on each point
+
+```{r}
+library(ggplot2)
+zion_elev <- terra::extract(srtm, zion_transect)
+zion_transect <- cbind(zion_transect, zion_elev)
+
+plot_transect <- ggplot(zion_transect, aes(as.numeric(dist),
+                                           srtm)) +
+  geom_line() +
+  labs(x = "Distance (m)", y = "Elevation (m a.s.l)") +
+  theme_bw()
+plot_transect
+```
+
+## Polygonal Extraction
+
+-   Returns many values, and can be useful for summary statistics within a polygonally defined zone
+
+```{r}
+zion_srtm_values <- terra::extract(x = srtm, y = zion)
+
+# generate summary stats
+zion_srtm_values %>%
+  group_by(ID) %>% 
+  summarize(across(srtm, list(min = min, mean = mean, max = max)))
+```
+
+-   similar approaches to the one demonstrated above can be applied to categorical rasters
+
+```{r}
+nlcd <- rast(system.file("raster/nlcd.tif", package = "spDataLarge"))
+zion2 <- st_transform(zion, st_crs(nlcd))
+zion_nlcd <- extract(nlcd, zion2, exact = TRUE)
+zion_nlcd %>% 
+  group_by(ID, levels) %>% 
+  count()
+```
+
+# Rasterization
+
+-   Rasterization is the process of generating a raster object from a (set of) vector object(s)
+    -   in **terra** we use `rasterize()`
+        -   it takes `x` - a vector object to be rasterized
+        -   it takes `y` - a template raster object defining extent, resolution, and CRS
+            -   resolution is vital - too low, results may miss variability; too high, and compute becomes more burdensome
+
+```{r}
+cycle_hire_osm <- spData::cycle_hire_osm
+cycle_hire_osm_projected <- st_transform(cycle_hire_osm, "EPSG:27700")
+raster_template <- rast(ext(cycle_hire_osm_projected), resolution = 1000,
+                        crs = crs(cycle_hire_osm_projected))
+```
+
+-   We will try three different rasterization approaches:
+    -   First, we will represent presence/absence of cycle hire points
+    -   Then, we will use `fun = "length"` to compute a count of points in each cell
+    -   Finally, we will compute the `capacity` of each cell using `fun = sum` and `field = "capacity"`
+
+```{r presence-absence}
+ch_raster <- rasterize(cycle_hire_osm_projected, raster_template)
+ch_raster %>% plot()
+```
+
+```{r count}
+ch_raster2 <- rasterize(cycle_hire_osm_projected, raster_template, fun = "length")
+ch_raster2 %>% plot()
+```
+
+```{r capacity}
+ch_raster3 <- rasterize(cycle_hire_osm_projected, raster_template, field = "capacity", fun = sum, na.rm = TRUE)
+ch_raster3 %>% plot()
+```
+
+-   When rasterizing lines, determine whether you want to include pixels touching the lines
+    -   the argument `touches` is used for this purpose
+
+```{r california-lines}
+california <- dplyr::filter(spData::us_states, NAME == "California")
+california_borders <- st_cast(california, "MULTILINESTRING")
+raster_template2 <- rast(ext(california), resolution = 0.5, 
+                         crs = st_crs(california)$wkt)
+```
+
+```{r california-touches}
+california_raster1 <- rasterize(california_borders, raster_template2, touches = T)
+california_raster1 %>% plot()
+```
+
+```{r california-nontouch}
+california_raster2 <- rasterize(california_borders, raster_template2, touches = F)
+california_raster2 %>% plot()
+```
+
+-   For polygons, we also have `touches` argument
+
+```{r california-poly-touch}
+calipoly_raster1 <- rasterize(california, raster_template2, touches = T)
+calipoly_raster1 %>% plot()
+```
+
+```{r california-poly-nontouch}
+calipoly_raster1 <- rasterize(california, raster_template2, touches = F)
+calipoly_raster1 %>% plot()
+```
+
+# Spatial Vectorization
