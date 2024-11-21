@@ -234,3 +234,160 @@ calipoly_raster1 %>% plot()
 ```
 
 # Spatial Vectorization
+
+-   Spatial Vectorization is the opposite of rasterization
+    -   WARNING! 'vectorization' has a different meaning within R and other programming languages; always use "Spatial Vectorization"
+-   Below, we vectorize the centroids of our cells `terra::as.points`
+
+```{r}
+elev <- rast(system.file("raster/elev.tif", package = "spData"))
+elev_point <- as.points(elev) %>% 
+  st_as_sf()
+elev %>% plot()
+elev_point %>% plot(pch = 19, col = "red", add = T)
+```
+
+-   we can create contor lines around phenomena in rasters, as well
+
+```{r}
+dem <- rast(system.file("raster/dem.tif", package = "spDataLarge"))
+
+cl <- as.contour(dem) %>% 
+  st_as_sf()
+plot(dem, axes = FALSE)
+plot(cl, add = TRUE)
+```
+
+-   vectorizing rasters to polygons can result in blocky polygons; smoothing them (e.g. with **smoothr**) may be more aesthetic, but can fudge numbers in analyses because they alter the spatial coverage from the pixels.
+
+```{r}
+grain <- rast(system.file("raster/grain.tif", package = "spData"))
+grain_poly <- as.polygons(grain) %>% 
+  st_as_sf()
+grain_poly %>% plot()
+```
+
+# Exercises
+
+```{r}
+zion_points_path <- system.file("vector/zion_points.gpkg",
+                                package = "spDataLarge")
+zion_points <- read_sf(zion_points_path)
+srtm <- rast(system.file("raster/srtm.tif", package = "spDataLarge"))
+ch <- st_combine(zion_points) %>% 
+  st_convex_hull() %>% 
+  st_as_sf()
+```
+
+## Exercise 1
+
+Crop the `srtm` raster using:
+
+-   `zion_points`
+
+    ```{r}
+    crop(srtm, zion_points) %>% plot()
+    ```
+
+-   `ch`
+
+    ```{r}
+    crop(srtm, ch) %>% plot()
+
+    ```
+
+Are there any differences in the output maps? Next, mask `srtm` using these two datasets. Can you see any difference now? How would you explain it?
+
+```{r}
+mask1 <- mask(srtm, zion_points)
+mask2 <- mask(srtm, ch)
+mask1 %>% plot()
+mask2 %>% plot()
+```
+
+## Exercise 2
+
+Firstly, extract values from `srtm` at the points represented in `zion_points`. Next, extract average values of `srtm` using a 90 buffer around each point frm `zion_points` and compare these two sets of values. When would extracting values by buffers be more suitable than by points alone?
+
+-   Bonus: Implement extraction using **exactextractr** and compare results.
+
+```{r}
+elevation <- terra::extract(srtm, zion_points)
+zion_points <- cbind(zion_points, elevation) %>% select(-ID)
+
+# plot(zion_points, pch = 16)
+
+zion_buff <- st_buffer(zion_points, 90)
+
+zion_buff_values <- terra::extract(x = srtm, y = zion_buff, fun = "mean", exact = T)
+
+# generate summary stats
+zion_buff_values %>%
+  group_by(ID) %>% 
+  summarize(across(srtm, mean))
+plot(zion_points$srtm, zion_buff_values$srtm)
+
+zion_buff_exact <- exact_extract(srtm, zion_buff, fun = "mean")
+plot(zion_buff_values$srtm, zion_buff_exact)
+```
+
+## Exercise 3
+
+Subset points higher than 3100 meters in New Zealand (the `nz_height` object) and create a template raster with a resolution of 3 km for the extent of the new point dataset. Using these two new objects:
+
+```{r}
+nz_3100 <- spData::nz_height %>% filter(elevation > 3100)
+nz_template <- rast(ext(nz_3100), resolution = 3000, 
+                         crs = st_crs(nz_3100)$wkt)
+
+```
+
+-   Count numbers of the highest points in each grid cell.
+
+```{r}
+nz_raster1 <- rasterize(nz_3100, nz_template, field = "elevation", 
+                        fun = "count", na.rm = TRUE)
+nz_raster1 %>% plot()
+```
+
+-   Find the maximum elevation in each grid cell.
+
+```{r}
+nz_raster2 <- rasterize(nz_3100, nz_template, field = "elevation", 
+                        fun = "max", na.rm = TRUE)
+nz_raster2 %>% plot()
+```
+
+## Exercise 4
+
+Aggregate the raster counting high points in New Zealand (created in the previous exercise), reduce its geographic resolution by half (so cells are 6 x 6 km) and plot the result.
+
+```{r}
+nz_raster3 <- aggregate(nz_raster1, fact = 2, fun = sum, na.rm = T)
+nz_raster3 %>% plot()
+```
+
+-   Resample the lower resolution raster back to the original resolution of 3 km. How have the results changed?
+
+```{r}
+nz_raster4 <- nz_raster3 %>% 
+  resample(nz_template, "near")
+nz_raster4 %>% plot()
+```
+
+-   Name two advantages and disadvantages of reducing raster resolution.
+
+## Exercise 5
+
+Polygonize the `grain` dataset and filter all squares representing clay.
+
+-   Name two advantages and disadvantages of vector data over raster data.
+-   When would it be useful to convert rasters to vectors in your work?
+
+```{r}
+grain <- rast(system.file("raster/grain.tif", package = "spData"))
+grain_poly <- as.polygons(grain) %>% 
+  st_as_sf()
+
+grain_poly %>% filter(grain == "clay") %>% plot()
+```
