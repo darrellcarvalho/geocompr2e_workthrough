@@ -1,0 +1,47 @@
+---
+title: "Chapter 7 Notes"
+author: "Darrell A. Carvalho"
+output:
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    theme: spacelab
+    number_sections: yes
+---
+
+# Setup
+
+```{r setup, eval = TRUE, include = TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+# install.packages("remotes")
+# remotes::install_github("geocompx/geocompkg")
+library(sf)
+library(terra)
+library(dplyr)
+library(spData)
+library(spDataLarge)
+```
+
+# Introduction
+
+-   This chapter covers **geographic** and **projected** coordinate reference systems in depth
+    -   Transformation between CRSes
+    -   Setting CRSes
+    -   Issues from failing to account for CRSes
+-   Section 7.2 covers Coordinate Reference Systems in R
+-   Section 7.3 covers the retrieval and setting of CRSes within R
+-   Section 7.4 shows importance of CRS knowledge in geospatial operations
+-   Section 7.5 covers when to reproject data
+-   Section 7.6 covers the choosing of appropriate CRSes
+-   Section 7.7 covers the reprojection of vector data
+-   Section 7.8 covers the reprojection of raster data
+-   Section 7.9 covers the modification and creation of CRSes
+
+# Coordinate Reference Systems
+
+-   **PROJ** is the underlying C++ library behind (re)projection and CRS conversion in much contemporary geospatial software
+    -   Generally speaking, at least when working within R, we prefer 'authority:code" strings to define CRSes
+        -   e.g. `EPSG:4326`
+    -   The Open Geospatial Consortium also developed Well-Known Text (WKT) to more fully define "the structure and content of a text string implementation of the abstract model for coordinate reference systems described in ISO 19111:2019".
+    -   
